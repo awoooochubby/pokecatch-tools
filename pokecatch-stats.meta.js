@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.2.0
+// @version      0.2.1
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
