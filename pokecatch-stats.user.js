@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.3.1
+// @version      0.3.2
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -21,8 +21,9 @@
   let limit = Math.max(1, Math.min(100, Number(settings.limit) || 20));
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
   let battleHistory=Array.isArray(settings.battleHistory)?settings.battleHistory.slice(-50):[], activeBattle=null, battlePrevious=null;
-  let cycleStart=null, rateSince=0;
-  let previous, current, rawOld, lastSeen = Date.now(), samples = {}, status = '等待游戏存档…';
+  let cycleStart=null;
+  let session={start:null,total:0,partial:false,mons:{},previous:null};
+  let previous, current, rawOld, lastSeen = Date.now(), status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
   Object.assign(host.style, {position:'fixed',right:'16px',top:'80px',width:'380px',maxWidth:'calc(100vw - 16px)',zIndex:'2147483647'});
   function mount() { if(!host.isConnected)document.body.append(host); }
@@ -36,8 +37,8 @@
   </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
     <small id="status"></small>
     <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
-    <details open><summary>刷经验效率</summary><div id="battle-summary"></div><small>队伍合计 · 含场间等待 · 仅完整样本</small><p><button id="reset-rate">从现在重新统计</button></p><div id="battle-list" class="feed"></div></details>
-    <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按近期经验增长估算。</small></p></details>
+    <details open><summary>刷经验效率</summary><div id="battle-summary"></div><small>持续累计 · 含战斗及等待时间</small><p><button id="reset-rate">从现在重新统计</button></p><div id="battle-list" class="feed"></div></details>
+    <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按本次累计经验速度估算。</small></p></details>
     <details><summary>最近几轮</summary><div id="logs"></div></details>
     <details><summary>设置</summary><div class="toolbar">保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出记录</button></div></details>
   </main></section>`;
@@ -56,8 +57,9 @@
   }
   $('#limit').value=limit;
   $('#limit').onchange=e=>{limit=Math.max(1,Math.min(100,Math.floor(+e.target.value)||20));e.target.value=limit;history=history.slice(-limit);persist();renderLogs();};
-  $('#reset').onclick=()=>{samples={};};
-  $('#reset-rate').onclick=()=>{rateSince=Date.now();cycleStart=rateSince;if(activeBattle){activeBattle.partial=true;}renderBattles();};
+  function resetSession(){session={start:null,total:0,partial:false,mons:{},previous:null};renderBattles();}
+  $('#reset').onclick=resetSession;
+  $('#reset-rate').onclick=resetSession;
   $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
   $('#export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,history,current},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pokecatch-rounds.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   let drag=null;
@@ -140,10 +142,26 @@
     if(activeBattle&&!b)finishBattle();
     battlePrevious=s;
   }
+  function sampleSession(s,now) {
+    session.start ??= now;
+    const old=session.previous;
+    const ids=new Set([...(s.team||[]),...(old?.team||[])]);
+    for(const uid of ids){
+      const m=s.mons.find(x=>x.uid===uid),o=old?.mons.find(x=>x.uid===uid);
+      if(!m)continue;
+      const entry=session.mons[uid]||={start:now,total:0,partial:false};
+      if(!o)continue;
+      let gain=0;
+      if(m.level===o.level&&m.xp>=o.xp)gain=m.xp-o.xp;
+      else if(m.level>o.level){gain=Math.max(0,m.xp);entry.partial=true;session.partial=true;}
+      else if(m.level<o.level||m.xp<o.xp){entry.partial=true;session.partial=true;}
+      if(Number.isFinite(gain)){entry.total+=gain;session.total+=gain;}
+    }
+    session.previous=s;
+  }
   function renderBattles() {
-    const valid=battleHistory.filter(x=>!x.partial&&Number.isFinite(x.efficiencyMs)&&x.efficiencyMs>0&&x.measuredFrom>=rateSince);
-    const sum=valid.reduce((a,x)=>a+x.total,0),ms=valid.reduce((a,x)=>a+x.efficiencyMs,0);
-    $('#battle-summary').innerHTML=ms?'<b style="font-size:22px;color:#85d7b1">'+fmt(sum*60000/ms)+' XP / 分钟</b><br><small>'+fmt(sum*3600000/ms)+' XP / 小时 · '+fmt(sum)+' XP / '+duration(ms)+' · '+valid.length+' 场</small>':'等待一场完整记录后显示 XP / 分钟';
+    const ms=session.start===null?0:Date.now()-session.start,sum=session.total;
+    $('#battle-summary').innerHTML=ms>0?'<b style="font-size:22px;color:#85d7b1">'+(session.partial?'≥ ':'')+fmt(sum*60000/ms)+' XP / 分钟</b><br><small>累计 '+fmt(sum)+' XP · '+duration(ms)+' · '+fmt(sum*3600000/ms)+' XP / 小时'+(session.partial?'<br>跨级或采样缺失：显示已确认经验的下界':'')+'</small>':'开始累计经验与时长…';
     const row=(b,label)=>{const elapsed=b.end?b.efficiencyMs:Date.now()-b.measuredFrom;
       const rate=!b.partial&&b.end&&elapsed>0?' · '+fmt(b.total*60000/elapsed)+' XP/分':'';
       return '<details><summary>'+esc(label)+' · '+(b.partial?'至少 ':'+')+fmt(b.total)+' XP'+rate+'</summary>'+(elapsed>0?'<small>耗时 '+duration(elapsed)+'（含场间等待）</small>':'')+Object.values(b.mons).map(m=>'<div class="entry"><span>'+esc(m.name)+'</span><b>+'+fmt(m.xp)+' XP</b></div>').join('')+(b.partial?'<small>中途接入、跨级或采样缺失；不计入效率</small>':'')+'</details>';};
@@ -158,9 +176,10 @@
       if(!raw){$('#status').textContent='等待游戏首次保存…';return;}
       const s=JSON.parse(raw);
       if(!Array.isArray(s.mons)||!Number.isFinite(s.adv?.runs)){ $('#status').textContent='当前存档结构不支持：等待冒险开始';return; }
-      if(now-lastSeen>15000){finishBattle(true);battlePrevious=null;cycleStart=null;if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;samples={};}
+      if(now-lastSeen>15000){finishBattle(true);battlePrevious=null;cycleStart=null;if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;session.partial=true;}
       lastSeen=now;
       if(!current)current=start(s,true);
+      sampleSession(s,now);
       if(raw!==rawOld){
         sampleBattle(s);
         if(previous){
@@ -168,7 +187,7 @@
           if(delta!==0||s.adv.chapter!==previous.adv.chapter){
             if(delta!==1)current.partial=true;
             close(delta>1?`漏过 ${delta} 轮；无法还原逐轮明细`:delta===1?'整轮完成（以存档轮次为准）':'切换章节或存档');
-            current=start(s,delta!==1);samples={};
+            current=start(s,delta!==1);
           } else {
             for(const m of s.mons){const old=previous.mons.find(x=>x.uid===m.uid);if(!old)continue;
               if(m.level===old.level&&m.xp>=old.xp)current.xp[m.uid]=(current.xp[m.uid]||0)+m.xp-old.xp;
@@ -185,14 +204,13 @@
       for(const uid of s.team||[]){const m=s.mons.find(x=>x.uid===uid);if(!m)continue;
         const row=[...document.querySelectorAll('#team-rail .tr-row[data-uid]')].find(x=>x.dataset.uid===String(uid));
         const label=row?.title?.split('—')[0]?.trim()||`精灵 #${m.id}`;
-        let arr=samples[uid];if(!arr||arr.at(-1).level!==m.level||arr.at(-1).xp>m.xp)arr=samples[uid]=[];
-        arr.push({at:now,xp:m.xp,level:m.level});while(arr.length>1&&arr[0].at<now-300000)arr.shift();
-        const elapsed=now-arr[0].at,rate=elapsed>10000?(m.xp-arr[0].xp)/(elapsed/1000):0;
+        const entry=session.mons[uid],elapsed=entry?now-entry.start:0;
+        const rate=entry&&elapsed>10000?entry.total/(elapsed/1000):0;
         const pct=parseFloat(row?.querySelector('.tr-xp i')?.style.width);
         const remaining=pct>0&&pct<100?m.xp*(100/pct-1):NaN;
         let eta=rate>0&&Number.isFinite(remaining)?'约 '+duration(remaining/rate*1000):'采样中 / 暂无经验增长';
         if(m.level>=100||pct===100)eta='满级或等级上限';if(s.adv.paused)eta='已暂停';
-        cards.push(`<div class="mon"><b>${esc(label)}</b> Lv.${m.level}<br>当前 ${fmt(m.xp)} XP · ${fmt(rate*60)} XP/分<br>下一级：${eta}</div>`);
+        cards.push(`<div class="mon"><b>${esc(label)}</b> Lv.${m.level}<br>当前 ${fmt(m.xp)} XP · ${entry?.partial?"≥ ":""}${fmt(rate*60)} XP/分<br>下一级：${eta}</div>`);
       }
       renderBattles();
       $('#mons').innerHTML=cards.join('')||'等待队伍数据';$('#status').textContent=status;
