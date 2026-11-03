@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.3.0
+// @version      0.3.1
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -21,6 +21,7 @@
   let limit = Math.max(1, Math.min(100, Number(settings.limit) || 20));
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
   let battleHistory=Array.isArray(settings.battleHistory)?settings.battleHistory.slice(-50):[], activeBattle=null, battlePrevious=null;
+  let cycleStart=null, rateSince=0;
   let previous, current, rawOld, lastSeen = Date.now(), samples = {}, status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
   Object.assign(host.style, {position:'fixed',right:'16px',top:'80px',width:'380px',maxWidth:'calc(100vw - 16px)',zIndex:'2147483647'});
@@ -35,7 +36,7 @@
   </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
     <small id="status"></small>
     <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
-    <details open><summary>每场经验</summary><div id="battle-summary"></div><small>队伍合计 · 最近 50 场；均值只计完整样本</small><div id="battle-list" class="feed"></div></details>
+    <details open><summary>刷经验效率</summary><div id="battle-summary"></div><small>队伍合计 · 含场间等待 · 仅完整样本</small><p><button id="reset-rate">从现在重新统计</button></p><div id="battle-list" class="feed"></div></details>
     <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按近期经验增长估算。</small></p></details>
     <details><summary>最近几轮</summary><div id="logs"></div></details>
     <details><summary>设置</summary><div class="toolbar">保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出记录</button></div></details>
@@ -56,6 +57,7 @@
   $('#limit').value=limit;
   $('#limit').onchange=e=>{limit=Math.max(1,Math.min(100,Math.floor(+e.target.value)||20));e.target.value=limit;history=history.slice(-limit);persist();renderLogs();};
   $('#reset').onclick=()=>{samples={};};
+  $('#reset-rate').onclick=()=>{rateSince=Date.now();cycleStart=rateSince;if(activeBattle){activeBattle.partial=true;}renderBattles();};
   $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
   $('#export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,history,current},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pokecatch-rounds.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   let drag=null;
@@ -109,9 +111,12 @@
   function finishBattle(partial=false) {
     if(!activeBattle)return;
     activeBattle.partial ||= partial;activeBattle.end=Date.now();
+    activeBattle.efficiencyMs=Math.max(0,activeBattle.end-activeBattle.measuredFrom);
+    cycleStart=activeBattle.end;
     battleHistory.push(activeBattle);battleHistory=battleHistory.slice(-50);activeBattle=null;persist();
   }
   function sampleBattle(s) {
+    cycleStart ??= Date.now();
     const count=s.stats?.battles, b=s.adv.battle, old=battlePrevious;
     if(!Number.isFinite(count))return;
     const same=old&&old.stats?.battles===count;
@@ -119,7 +124,7 @@
     if(!activeBattle&&b){
       // Only a witnessed transition from an idle snapshot can establish a full baseline.
       const clean=old&&!old.adv.battle&&count===old.stats?.battles+1&&s.adv.chapter===old.adv.chapter&&(s.team||[]).every(uid=>{const m=s.mons.find(x=>x.uid===uid),o=old.mons.find(x=>x.uid===uid);return m&&o&&m.level===o.level&&m.xp===o.xp;});
-      activeBattle={count,start:Date.now(),partial:!clean,total:0,mons:{},round:current?.start};
+      activeBattle={count,start:Date.now(),measuredFrom:cycleStart,partial:!clean,total:0,mons:{},round:current?.start};
     }
     if(activeBattle&&same){
       const ids=new Set([...(old.team||[]),...(s.team||[])]);
@@ -136,9 +141,12 @@
     battlePrevious=s;
   }
   function renderBattles() {
-    const valid=battleHistory.filter(x=>!x.partial),sum=valid.reduce((a,x)=>a+x.total,0);
-    $('#battle-summary').textContent=valid.length?'平均 '+fmt(sum/valid.length)+' XP / 场 · '+valid.length+' 场完整样本':'平均经验：等待一场完整记录';
-    const row=(b,label)=>'<details><summary>'+esc(label)+' · '+(b.partial?'至少 ':'+')+fmt(b.total)+' XP</summary>'+Object.values(b.mons).map(m=>'<div class="entry"><span>'+esc(m.name)+'</span><b>+'+fmt(m.xp)+' XP</b></div>').join('')+(b.partial?'<small>中途接入、跨级或采样缺失；不计入均值</small>':'')+'</details>';
+    const valid=battleHistory.filter(x=>!x.partial&&Number.isFinite(x.efficiencyMs)&&x.efficiencyMs>0&&x.measuredFrom>=rateSince);
+    const sum=valid.reduce((a,x)=>a+x.total,0),ms=valid.reduce((a,x)=>a+x.efficiencyMs,0);
+    $('#battle-summary').innerHTML=ms?'<b style="font-size:22px;color:#85d7b1">'+fmt(sum*60000/ms)+' XP / 分钟</b><br><small>'+fmt(sum*3600000/ms)+' XP / 小时 · '+fmt(sum)+' XP / '+duration(ms)+' · '+valid.length+' 场</small>':'等待一场完整记录后显示 XP / 分钟';
+    const row=(b,label)=>{const elapsed=b.end?b.efficiencyMs:Date.now()-b.measuredFrom;
+      const rate=!b.partial&&b.end&&elapsed>0?' · '+fmt(b.total*60000/elapsed)+' XP/分':'';
+      return '<details><summary>'+esc(label)+' · '+(b.partial?'至少 ':'+')+fmt(b.total)+' XP'+rate+'</summary>'+(elapsed>0?'<small>耗时 '+duration(elapsed)+'（含场间等待）</small>':'')+Object.values(b.mons).map(m=>'<div class="entry"><span>'+esc(m.name)+'</span><b>+'+fmt(m.xp)+' XP</b></div>').join('')+(b.partial?'<small>中途接入、跨级或采样缺失；不计入效率</small>':'')+'</details>';};
     const html=(activeBattle?row(activeBattle,'本场进行中'):'')+battleHistory.slice().reverse().map(b=>row(b,new Date(b.end).toLocaleTimeString())).join('');
     const el=$('#battle-list');
     if(el.dataset.content!==html){const open=[...el.querySelectorAll('details')].map(x=>x.open);el.innerHTML=html||'<div class="empty">完成战斗后显示每场经验</div>';el.dataset.content=html;[...el.querySelectorAll('details')].forEach((x,i)=>x.open=!!open[i]);}
@@ -150,7 +158,7 @@
       if(!raw){$('#status').textContent='等待游戏首次保存…';return;}
       const s=JSON.parse(raw);
       if(!Array.isArray(s.mons)||!Number.isFinite(s.adv?.runs)){ $('#status').textContent='当前存档结构不支持：等待冒险开始';return; }
-      if(now-lastSeen>15000){finishBattle(true);battlePrevious=null;if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;samples={};}
+      if(now-lastSeen>15000){finishBattle(true);battlePrevious=null;cycleStart=null;if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;samples={};}
       lastSeen=now;
       if(!current)current=start(s,true);
       if(raw!==rawOld){
