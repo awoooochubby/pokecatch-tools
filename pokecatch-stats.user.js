@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.3.2
+// @version      0.3.3
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -22,7 +22,15 @@
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
   let battleHistory=Array.isArray(settings.battleHistory)?settings.battleHistory.slice(-50):[], activeBattle=null, battlePrevious=null;
   let cycleStart=null;
-  let session={start:null,total:0,partial:false,mons:{},previous:null};
+  const SESSION_KEY='pc-stat-session-v1';
+  const emptySession=()=>({start:null,total:0,partial:false,mons:{},previous:null});
+  let session=emptySession();
+  try {
+    const saved=JSON.parse(localStorage.getItem(SESSION_KEY));
+    if(saved && Number.isFinite(saved.start) && saved.start<=Date.now() && Number.isFinite(saved.total) && saved.total>=0 && saved.mons && typeof saved.mons==='object' && Array.isArray(saved.previous?.mons) && Array.isArray(saved.previous?.team))session=saved;
+  } catch {}
+  function saveSession(){try{localStorage.setItem(SESSION_KEY,JSON.stringify(session));}catch{}}
+
   let previous, current, rawOld, lastSeen = Date.now(), status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
   Object.assign(host.style, {position:'fixed',right:'16px',top:'80px',width:'380px',maxWidth:'calc(100vw - 16px)',zIndex:'2147483647'});
@@ -37,7 +45,7 @@
   </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
     <small id="status"></small>
     <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
-    <details open><summary>刷经验效率</summary><div id="battle-summary"></div><small>持续累计 · 含战斗及等待时间</small><p><button id="reset-rate">从现在重新统计</button></p><div id="battle-list" class="feed"></div></details>
+    <details open><summary>累计刷经验效率</summary><div id="battle-summary"></div><small>死亡、回城、刷新后继续累计 · 手动重置才清零</small><p><button id="reset-rate">从现在重新统计</button></p><div id="battle-list" class="feed"></div></details>
     <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按本次累计经验速度估算。</small></p></details>
     <details><summary>最近几轮</summary><div id="logs"></div></details>
     <details><summary>设置</summary><div class="toolbar">保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出记录</button></div></details>
@@ -57,7 +65,7 @@
   }
   $('#limit').value=limit;
   $('#limit').onchange=e=>{limit=Math.max(1,Math.min(100,Math.floor(+e.target.value)||20));e.target.value=limit;history=history.slice(-limit);persist();renderLogs();};
-  function resetSession(){session={start:null,total:0,partial:false,mons:{},previous:null};renderBattles();}
+  function resetSession(){session=emptySession();saveSession();renderBattles();}
   $('#reset').onclick=resetSession;
   $('#reset-rate').onclick=resetSession;
   $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
@@ -157,7 +165,8 @@
       else if(m.level<o.level||m.xp<o.xp){entry.partial=true;session.partial=true;}
       if(Number.isFinite(gain)){entry.total+=gain;session.total+=gain;}
     }
-    session.previous=s;
+    session.previous={team:[...(s.team||[])],mons:s.mons.map(m=>({uid:m.uid,id:m.id,level:m.level,xp:m.xp}))};
+    saveSession();
   }
   function renderBattles() {
     const ms=session.start===null?0:Date.now()-session.start,sum=session.total;
@@ -165,7 +174,7 @@
     const row=(b,label)=>{const elapsed=b.end?b.efficiencyMs:Date.now()-b.measuredFrom;
       const rate=!b.partial&&b.end&&elapsed>0?' · '+fmt(b.total*60000/elapsed)+' XP/分':'';
       return '<details><summary>'+esc(label)+' · '+(b.partial?'至少 ':'+')+fmt(b.total)+' XP'+rate+'</summary>'+(elapsed>0?'<small>耗时 '+duration(elapsed)+'（含场间等待）</small>':'')+Object.values(b.mons).map(m=>'<div class="entry"><span>'+esc(m.name)+'</span><b>+'+fmt(m.xp)+' XP</b></div>').join('')+(b.partial?'<small>中途接入、跨级或采样缺失；不计入效率</small>':'')+'</details>';};
-    const html=(activeBattle?row(activeBattle,'本场进行中'):'')+battleHistory.slice().reverse().map(b=>row(b,new Date(b.end).toLocaleTimeString())).join('');
+    const html=(activeBattle?row(activeBattle,'本场收入（进行中）'):'')+battleHistory.slice().reverse().map(b=>row(b,new Date(b.end).toLocaleTimeString())).join('');
     const el=$('#battle-list');
     if(el.dataset.content!==html){const open=[...el.querySelectorAll('details')].map(x=>x.open);el.innerHTML=html||'<div class="empty">完成战斗后显示每场经验</div>';el.dataset.content=html;[...el.querySelectorAll('details')].forEach((x,i)=>x.open=!!open[i]);}
   }
