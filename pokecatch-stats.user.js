@@ -1,19 +1,20 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.1.2
+// @version      0.2.0
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
 // @description  只读存档与界面，按 adv.runs 保存整轮日志及升级估算
 // @match        https://pokecatch-online.netlify.app/*
 // @match        https://pokecatch-online.pages.dev/*
+// @noframes
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
 (() => {
   'use strict';
-  if (document.getElementById('pc-stat-host')) return;
+  if (window.top !== window.self || document.getElementById('pc-stat-host')) return;
   const KEY = 'pc-stat-v1', SAVE = 'gachamon-save-v1';
   let settings;
   try { settings = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { settings = {}; }
@@ -21,19 +22,21 @@
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
   let previous, current, rawOld, lastSeen = Date.now(), samples = {}, status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
-  Object.assign(host.style, {position:'fixed',right:'14px',top:'80px',zIndex:'2147483647'});
-  document.body.append(host);
+  Object.assign(host.style, {display:'block',width:'100%',margin:'16px 0'});
+  function mount() { const arena=document.querySelector('#arena'); if(arena && host.previousElementSibling!==arena)arena.after(host); }
+  mount();
   const root = host.attachShadow({mode:'open'});
   root.innerHTML = `<style>
-    :host{font:13px/1.5 system-ui;color:#edf3ff} *{box-sizing:border-box}
-    section{width:350px;max-width:94vw;background:#151e30;border:1px solid #526584;border-radius:12px;box-shadow:0 8px 35px #0008;overflow:hidden}
-    header{padding:10px 12px;background:#25344f;cursor:move;touch-action:none;font-weight:bold;display:flex;justify-content:space-between}
-    main{padding:12px;max-height:70vh;overflow:auto}button,input{font:inherit;color:inherit;background:#293a56;border:1px solid #536984;border-radius:5px;padding:3px 7px}button{cursor:pointer}input{width:58px}small{color:#aabbd5}p{margin:7px 0}.mon{padding:7px 0;border-bottom:1px solid #344158}details{margin:8px 0;border-top:1px solid #344158;padding-top:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 system-ui}summary{cursor:pointer}
-  </style><section><header><span>经验统计 · 整轮日志</span><button id="fold">−</button></header><main>
-    <small id="status"></small><div id="mons"></div>
-    <p>保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出</button> <button id="reset">重测速度</button></p>
-    <small>升级估算采用最近 5 分钟、当前等级的样本，含等待时间。经验条推算仅供参考；换等级后重新采样。</small>
-    <details open><summary id="live">当前轮实时日志</summary><small>最新记录在上方；无需等本轮结束。</small><pre id="live-log" style="max-height:260px;overflow:auto">等待战斗日志…</pre></details><p>最近已结束的轮次（点击展开）</p><div id="logs"></div>
+    :host{font:13px/1.6 system-ui;color:#e5eaf3}*{box-sizing:border-box}
+    section{background:#151a25;border:1px solid #30394a;border-radius:14px;overflow:hidden;width:100%}
+    header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #30394a}header span{font-size:16px;font-weight:700}
+    main{padding:16px 18px}button,input{font:inherit;color:inherit;background:#242c3b;border:1px solid #46516a;border-radius:7px;padding:5px 10px}button{cursor:pointer}input{width:60px}small{color:#91a0b7}p{margin:10px 0}summary{cursor:pointer;font-weight:600;padding:7px 0}details{margin:8px 0}.mon{padding:10px;border:1px solid #30394a;border-radius:8px;margin:6px 0}#mons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.feed{max-height:320px;overflow:auto;scrollbar-width:thin}.entry{display:flex;gap:14px;padding:9px 3px;border-bottom:1px solid #242d3d;overflow-wrap:anywhere}.entry time{color:#72829c;font-size:11px;flex-shrink:0;padding-top:3px}.entry span{white-space:pre-wrap}.damage{color:#ffb986}.heal{color:#85d7b1}.empty{padding:20px;color:#91a0b7;text-align:center}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#status{display:block;margin-bottom:8px}
+  </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
+    <small id="status"></small>
+    <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
+    <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按近期经验增长估算。</small></p></details>
+    <details><summary>最近几轮</summary><div id="logs"></div></details>
+    <details><summary>设置</summary><div class="toolbar">保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出记录</button></div></details>
   </main></section>`;
   const $ = s => root.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -42,37 +45,49 @@
   function persist() { try { localStorage.setItem(KEY,JSON.stringify({limit,history})); } catch { status = '插件存储已满；本次日志仅保留在内存'; } }
   function start(s, partial) { return {start:Date.now(),run:s.adv.runs,chapter:s.adv.chapter,partial,logs:[],xp:{},levels:{},battles:[]}; }
   function close(note) { if(!current)return; current.end=Date.now();current.note=note;history.push(current);history=history.slice(-limit);persist(); renderLogs(); }
+  function logHtml(logs) {
+    return logs.length?logs.slice().reverse().map(line=>{const i=line.indexOf(' | '),time=i<0?'':line.slice(0,i),text=i<0?line:line.slice(i+3);return '<div class="entry '+(text.startsWith('伤害')?'damage':text.startsWith('恢复')?'heal':'')+'"><time>'+esc(time)+'</time><span>'+esc(text)+'</span></div>';}).join(''):'<div class="empty">战斗开始后，记录会显示在这里</div>';
+  }
   function renderLogs() {
-    $('#logs').innerHTML=history.slice().reverse().map(r=>`<details><summary>${esc(new Date(r.start).toLocaleTimeString())} · 轮 ${esc(r.run+1)} · ${duration(r.end-r.start)} ${r.partial?'（不完整）':''}</summary><small>${esc(r.note)} · 观测到 ${r.battles.length} 场</small><pre>${esc(Object.entries(r.xp).map(([id,x])=>`${id}: 已确认 +${fmt(x)} XP，升级 ${r.levels[id]||0}`).join('\n'))}\n${esc(r.logs.join('\n'))}</pre></details>`).join('');
+    $('#logs').innerHTML=history.length?history.slice().reverse().map(r=>'<details><summary>'+esc(new Date(r.start).toLocaleTimeString())+' · '+duration(r.end-r.start)+(r.partial?' · 部分记录':'')+'</summary><div class="feed">'+logHtml(r.logs)+'</div></details>').join(''):'<div class="empty">完成一轮后会保存在这里</div>';
   }
   $('#limit').value=limit;
   $('#limit').onchange=e=>{limit=Math.max(1,Math.min(100,Math.floor(+e.target.value)||20));e.target.value=limit;history=history.slice(-limit);persist();renderLogs();};
   $('#reset').onclick=()=>{samples={};};
-  $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'+':'−';};
+  $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
   $('#export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,history,current},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pokecatch-rounds.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-  let drag;
-  $('header').onpointerdown=e=>{if(e.target.tagName==='BUTTON')return;const b=host.getBoundingClientRect();drag={x:e.clientX-b.left,y:e.clientY-b.top};e.currentTarget.setPointerCapture(e.pointerId);};
-  $('header').onpointermove=e=>{if(!drag)return;host.style.right='auto';host.style.left=Math.max(0,Math.min(innerWidth-host.offsetWidth,e.clientX-drag.x))+'px';host.style.top=Math.max(0,Math.min(innerHeight-45,e.clientY-drag.y))+'px';};
-  $('header').onpointerup=$('header').onpointercancel=()=>{drag=null;};
+  let lastMessage='';
+  const seenDamage=new WeakSet();
+  function appendLog(text) { if(!current)return; if(current.logs.length<3000)current.logs.push(new Date().toLocaleTimeString()+' | '+text);else current.partial=true;renderLive(); }
+  function damageNode(node) {
+    if(node.nodeType!==1)return;
+    const items=[...(node.matches('.dmg')?[node]:[]),...node.querySelectorAll('.dmg')];
+    for(const el of items){if(seenDamage.has(el)||!el.closest('#arena-fx'))continue;seenDamage.add(el);
+      const text=el.textContent.trim();const m=/^([+\-−])(\d[\d.,\s]*)(!)?$/.exec(text);if(!m)continue;
+      appendLog((m[1]==='+'?'恢复 +':'伤害 −')+m[2].trim()+(el.classList.contains('crit')||m[3]?' · 暴击':'')+(el.classList.contains('super')?' · 效果拔群':'')+(el.classList.contains('st-float')?' · 状态效果':''));
+    }
+  }
   function recordLog() {
     const node=document.querySelector('#battle-log');
     const text=node?.textContent?.trim();
-    if(current && text && current.logs.at(-1)?.split(' | ').slice(1).join(' | ')!==text){
-      if(current.logs.length<3000)current.logs.push(new Date().toLocaleTimeString()+' | '+text);
-      else current.partial=true;
-      renderLive();
-    }
+    if(current && text && text!==lastMessage && text!=='…'){lastMessage=text;appendLog(text);}
   }
   function renderLive() {
     if(!current)return;
-    $('#live').textContent=`当前轮 ${current.run+1} · 已观测 ${current.battles.length} 场 · ${current.logs.length} 条日志`;
-    const text=current.logs.length?current.logs.slice().reverse().join('\n'):'等待战斗日志…（只记录插件启用后显示的内容）';
-    if($('#live-log').textContent!==text)$('#live-log').textContent=text;
+    $('#live').textContent='本轮战斗';
+    const key=current.start+':'+current.logs.length;
+    if($('#live-log').dataset.key!==key){$('#live-log').dataset.key=key;$('#live-log').innerHTML=logHtml(current.logs);}
   }
-  const observer=new MutationObserver(records=>{if(records.some(r=>r.target.parentElement?.closest('#battle-log')||r.target.id==='battle-log'))recordLog();});
+  const observer=new MutationObserver(records=>{
+    for(const r of records){
+      if(r.target.parentElement?.closest('#battle-log')||r.target.id==='battle-log')recordLog();
+      for(const node of r.addedNodes)damageNode(node);
+    }
+  });
   observer.observe(document.body,{subtree:true,childList:true,characterData:true});
   function tick() {
     try {
+      mount();
       const now=Date.now(), raw=localStorage.getItem(SAVE);
       if(!raw){$('#status').textContent='等待游戏首次保存…';return;}
       const s=JSON.parse(raw);
@@ -98,7 +113,7 @@
         if(b){const id=JSON.stringify([s.adv.node,b.kind,(b.enemies||[]).map(x=>x.uid)]);if(!current.battles.includes(id))current.battles.push(id);}
         previous=s;rawOld=raw;recordLog();
       }
-      status=s.adv.paused?'游戏已暂停；恢复后建议重测速度':'已连接 · 按存档轮次分组（保存存在延迟）';
+      status=s.adv.paused?'已暂停':'记录中 · 最新消息在上方';
       const cards=[];
       for(const uid of s.team||[]){const m=s.mons.find(x=>x.uid===uid);if(!m)continue;
         const row=[...document.querySelectorAll('#team-rail .tr-row[data-uid]')].find(x=>x.dataset.uid===String(uid));
