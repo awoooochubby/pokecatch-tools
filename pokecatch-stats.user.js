@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.2.0
+// @version      0.2.1
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -22,15 +22,15 @@
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
   let previous, current, rawOld, lastSeen = Date.now(), samples = {}, status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
-  Object.assign(host.style, {display:'block',width:'100%',margin:'16px 0'});
-  function mount() { const arena=document.querySelector('#arena'); if(arena && host.previousElementSibling!==arena)arena.after(host); }
+  Object.assign(host.style, {position:'fixed',right:'16px',top:'80px',width:'380px',maxWidth:'calc(100vw - 16px)',zIndex:'2147483647'});
+  function mount() { if(!host.isConnected)document.body.append(host); }
   mount();
   const root = host.attachShadow({mode:'open'});
   root.innerHTML = `<style>
     :host{font:13px/1.6 system-ui;color:#e5eaf3}*{box-sizing:border-box}
-    section{background:#151a25;border:1px solid #30394a;border-radius:14px;overflow:hidden;width:100%}
-    header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #30394a}header span{font-size:16px;font-weight:700}
-    main{padding:16px 18px}button,input{font:inherit;color:inherit;background:#242c3b;border:1px solid #46516a;border-radius:7px;padding:5px 10px}button{cursor:pointer}input{width:60px}small{color:#91a0b7}p{margin:10px 0}summary{cursor:pointer;font-weight:600;padding:7px 0}details{margin:8px 0}.mon{padding:10px;border:1px solid #30394a;border-radius:8px;margin:6px 0}#mons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.feed{max-height:320px;overflow:auto;scrollbar-width:thin}.entry{display:flex;gap:14px;padding:9px 3px;border-bottom:1px solid #242d3d;overflow-wrap:anywhere}.entry time{color:#72829c;font-size:11px;flex-shrink:0;padding-top:3px}.entry span{white-space:pre-wrap}.damage{color:#ffb986}.heal{color:#85d7b1}.empty{padding:20px;color:#91a0b7;text-align:center}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#status{display:block;margin-bottom:8px}
+    section{background:#151a25;border:1px solid #30394a;border-radius:14px;overflow:hidden;width:100%;box-shadow:0 12px 36px #0007}
+    header{cursor:grab;touch-action:none;user-select:none;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #30394a}header span{font-size:16px;font-weight:700}
+    main{padding:16px 18px;max-height:calc(100vh - 150px);overflow:auto}button,input{font:inherit;color:inherit;background:#242c3b;border:1px solid #46516a;border-radius:7px;padding:5px 10px}button{cursor:pointer}input{width:60px}small{color:#91a0b7}p{margin:10px 0}summary{cursor:pointer;font-weight:600;padding:7px 0}details{margin:8px 0}.mon{padding:10px;border:1px solid #30394a;border-radius:8px;margin:6px 0}#mons{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.feed{max-height:320px;overflow:auto;scrollbar-width:thin}.entry{display:flex;gap:14px;padding:9px 3px;border-bottom:1px solid #242d3d;overflow-wrap:anywhere}.entry time{color:#72829c;font-size:11px;flex-shrink:0;padding-top:3px}.entry span{white-space:pre-wrap}.damage{color:#ffb986}.heal{color:#85d7b1}.empty{padding:20px;color:#91a0b7;text-align:center}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}#status{display:block;margin-bottom:8px}
   </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
     <small id="status"></small>
     <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
@@ -56,6 +56,21 @@
   $('#reset').onclick=()=>{samples={};};
   $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
   $('#export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify({version:1,history,current},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pokecatch-rounds.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+  let drag=null;
+  function clampPosition(x,y) {
+    host.style.right='auto';
+    host.style.left=Math.max(0,Math.min(innerWidth-host.offsetWidth,x))+'px';
+    host.style.top=Math.max(0,Math.min(innerHeight-$('header').offsetHeight,y))+'px';
+  }
+  $('header').onpointerdown=e=>{
+    if(e.button!==0||e.target.closest('button'))return;
+    const r=host.getBoundingClientRect();drag={x:e.clientX-r.left,y:e.clientY-r.top};
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  $('header').onpointermove=e=>{if(drag)clampPosition(e.clientX-drag.x,e.clientY-drag.y);};
+  $('header').onpointerup=$('header').onpointercancel=$('header').onlostpointercapture=()=>{drag=null;};
+  const onResize=()=>{const r=host.getBoundingClientRect();clampPosition(r.left,r.top);};
+  window.addEventListener('resize',onResize);
   let lastMessage='';
   const seenDamage=new WeakSet();
   function appendLog(text) { if(!current)return; if(current.logs.length<3000)current.logs.push(new Date().toLocaleTimeString()+' | '+text);else current.partial=true;renderLive(); }
@@ -132,5 +147,5 @@
     }catch(e){$('#status').textContent='读取失败：'+e.message;}
   }
   renderLogs();tick();const timer=setInterval(tick,1000);
-  window.__pcStatsDispose=()=>{clearInterval(timer);observer.disconnect();if(current){current.partial=true;close('插件更新或停止');}host.remove();delete window.__pcStatsDispose;};
+  window.__pcStatsDispose=()=>{clearInterval(timer);observer.disconnect();window.removeEventListener('resize',onResize);if(current){current.partial=true;close('插件更新或停止');}host.remove();delete window.__pcStatsDispose;};
 })();
