@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.1.1
+// @version      0.1.2
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -33,7 +33,7 @@
     <small id="status"></small><div id="mons"></div>
     <p>保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出</button> <button id="reset">重测速度</button></p>
     <small>升级估算采用最近 5 分钟、当前等级的样本，含等待时间。经验条推算仅供参考；换等级后重新采样。</small>
-    <div id="live"></div><div id="logs"></div>
+    <details open><summary id="live">当前轮实时日志</summary><small>最新记录在上方；无需等本轮结束。</small><pre id="live-log" style="max-height:260px;overflow:auto">等待战斗日志…</pre></details><p>最近已结束的轮次（点击展开）</p><div id="logs"></div>
   </main></section>`;
   const $ = s => root.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -60,7 +60,14 @@
     if(current && text && current.logs.at(-1)?.split(' | ').slice(1).join(' | ')!==text){
       if(current.logs.length<3000)current.logs.push(new Date().toLocaleTimeString()+' | '+text);
       else current.partial=true;
+      renderLive();
     }
+  }
+  function renderLive() {
+    if(!current)return;
+    $('#live').textContent=`当前轮 ${current.run+1} · 已观测 ${current.battles.length} 场 · ${current.logs.length} 条日志`;
+    const text=current.logs.length?current.logs.slice().reverse().join('\n'):'等待战斗日志…（只记录插件启用后显示的内容）';
+    if($('#live-log').textContent!==text)$('#live-log').textContent=text;
   }
   const observer=new MutationObserver(records=>{if(records.some(r=>r.target.parentElement?.closest('#battle-log')||r.target.id==='battle-log'))recordLog();});
   observer.observe(document.body,{subtree:true,childList:true,characterData:true});
@@ -106,7 +113,7 @@
         cards.push(`<div class="mon"><b>${esc(label)}</b> Lv.${m.level}<br>当前 ${fmt(m.xp)} XP · ${fmt(rate*60)} XP/分<br>下一级：${eta}</div>`);
       }
       $('#mons').innerHTML=cards.join('')||'等待队伍数据';$('#status').textContent=status;
-      $('#live').textContent=`当前轮 ${s.adv.runs+1} · 已观测 ${current.battles.length} 场 · ${current.logs.length} 条日志`;
+      renderLive();
     }catch(e){$('#status').textContent='读取失败：'+e.message;}
   }
   renderLogs();tick();const timer=setInterval(tick,1000);
