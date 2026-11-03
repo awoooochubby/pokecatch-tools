@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 经验与整轮日志
 // @namespace    local.pokecatch.stats
-// @version      0.2.1
+// @version      0.3.0
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-stats.user.js
 // @homepageURL  https://github.com/awoooochubby/pokecatch-tools
@@ -20,6 +20,7 @@
   try { settings = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { settings = {}; }
   let limit = Math.max(1, Math.min(100, Number(settings.limit) || 20));
   let history = Array.isArray(settings.history) ? settings.history.slice(-limit) : [];
+  let battleHistory=Array.isArray(settings.battleHistory)?settings.battleHistory.slice(-50):[], activeBattle=null, battlePrevious=null;
   let previous, current, rawOld, lastSeen = Date.now(), samples = {}, status = '等待游戏存档…';
   const host = document.createElement('div'); host.id = 'pc-stat-host';
   Object.assign(host.style, {position:'fixed',right:'16px',top:'80px',width:'380px',maxWidth:'calc(100vw - 16px)',zIndex:'2147483647'});
@@ -34,6 +35,7 @@
   </style><section><header><span>战斗记录</span><button id="fold">收起</button></header><main>
     <small id="status"></small>
     <details open><summary id="live">本轮战斗</summary><div id="live-log" class="feed"></div></details>
+    <details open><summary>每场经验</summary><div id="battle-summary"></div><small>队伍合计 · 最近 50 场；均值只计完整样本</small><div id="battle-list" class="feed"></div></details>
     <details><summary>升级进度</summary><div id="mons"></div><button id="reset">重新统计</button><p><small>预计时间按近期经验增长估算。</small></p></details>
     <details><summary>最近几轮</summary><div id="logs"></div></details>
     <details><summary>设置</summary><div class="toolbar">保留 <input id="limit" type="number" min="1" max="100"> 轮 <button id="export">导出记录</button></div></details>
@@ -42,7 +44,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => Math.round(n).toLocaleString();
   const duration = ms => { const s = Math.max(0,Math.ceil(ms/1000)); return s>=3600 ? `${Math.floor(s/3600)}小时${Math.floor(s%3600/60)}分` : `${Math.floor(s/60)}分${s%60}秒`; };
-  function persist() { try { localStorage.setItem(KEY,JSON.stringify({limit,history})); } catch { status = '插件存储已满；本次日志仅保留在内存'; } }
+  function persist() { try { localStorage.setItem(KEY,JSON.stringify({limit,history,battleHistory})); } catch { status = '插件存储已满；本次日志仅保留在内存'; } }
   function start(s, partial) { return {start:Date.now(),run:s.adv.runs,chapter:s.adv.chapter,partial,logs:[],xp:{},levels:{},battles:[]}; }
   function close(note) { if(!current)return; current.end=Date.now();current.note=note;history.push(current);history=history.slice(-limit);persist(); renderLogs(); }
   function logHtml(logs) {
@@ -100,6 +102,47 @@
     }
   });
   observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  function monName(m) {
+    const row=[...document.querySelectorAll('#team-rail .tr-row[data-uid]')].find(x=>x.dataset.uid===String(m.uid));
+    return row?.title?.split('—')[0]?.trim()||'精灵 #'+m.id;
+  }
+  function finishBattle(partial=false) {
+    if(!activeBattle)return;
+    activeBattle.partial ||= partial;activeBattle.end=Date.now();
+    battleHistory.push(activeBattle);battleHistory=battleHistory.slice(-50);activeBattle=null;persist();
+  }
+  function sampleBattle(s) {
+    const count=s.stats?.battles, b=s.adv.battle, old=battlePrevious;
+    if(!Number.isFinite(count))return;
+    const same=old&&old.stats?.battles===count;
+    if(activeBattle&&(!same||count!==activeBattle.count))finishBattle(true);
+    if(!activeBattle&&b){
+      // Only a witnessed transition from an idle snapshot can establish a full baseline.
+      const clean=old&&!old.adv.battle&&count===old.stats?.battles+1&&s.adv.chapter===old.adv.chapter&&(s.team||[]).every(uid=>{const m=s.mons.find(x=>x.uid===uid),o=old.mons.find(x=>x.uid===uid);return m&&o&&m.level===o.level&&m.xp===o.xp;});
+      activeBattle={count,start:Date.now(),partial:!clean,total:0,mons:{},round:current?.start};
+    }
+    if(activeBattle&&same){
+      const ids=new Set([...(old.team||[]),...(s.team||[])]);
+      if(JSON.stringify(old.team)!==JSON.stringify(s.team))activeBattle.partial=true;
+      for(const uid of ids){
+        const m=s.mons.find(x=>x.uid===uid),o=old.mons.find(x=>x.uid===uid);
+        if(!m||!o){activeBattle.partial=true;continue;}
+        if(m.level!==o.level||m.xp<o.xp){activeBattle.partial=true;continue;}
+        const xp=m.xp-o.xp;if(!Number.isFinite(xp)){activeBattle.partial=true;continue;}
+        if(xp>0){const entry=activeBattle.mons[uid]||={name:monName(m),xp:0};entry.xp+=xp;activeBattle.total+=xp;}
+      }
+    }
+    if(activeBattle&&!b)finishBattle();
+    battlePrevious=s;
+  }
+  function renderBattles() {
+    const valid=battleHistory.filter(x=>!x.partial),sum=valid.reduce((a,x)=>a+x.total,0);
+    $('#battle-summary').textContent=valid.length?'平均 '+fmt(sum/valid.length)+' XP / 场 · '+valid.length+' 场完整样本':'平均经验：等待一场完整记录';
+    const row=(b,label)=>'<details><summary>'+esc(label)+' · '+(b.partial?'至少 ':'+')+fmt(b.total)+' XP</summary>'+Object.values(b.mons).map(m=>'<div class="entry"><span>'+esc(m.name)+'</span><b>+'+fmt(m.xp)+' XP</b></div>').join('')+(b.partial?'<small>中途接入、跨级或采样缺失；不计入均值</small>':'')+'</details>';
+    const html=(activeBattle?row(activeBattle,'本场进行中'):'')+battleHistory.slice().reverse().map(b=>row(b,new Date(b.end).toLocaleTimeString())).join('');
+    const el=$('#battle-list');
+    if(el.dataset.content!==html){const open=[...el.querySelectorAll('details')].map(x=>x.open);el.innerHTML=html||'<div class="empty">完成战斗后显示每场经验</div>';el.dataset.content=html;[...el.querySelectorAll('details')].forEach((x,i)=>x.open=!!open[i]);}
+  }
   function tick() {
     try {
       mount();
@@ -107,10 +150,11 @@
       if(!raw){$('#status').textContent='等待游戏首次保存…';return;}
       const s=JSON.parse(raw);
       if(!Array.isArray(s.mons)||!Number.isFinite(s.adv?.runs)){ $('#status').textContent='当前存档结构不支持：等待冒险开始';return; }
-      if(now-lastSeen>15000){if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;samples={};}
+      if(now-lastSeen>15000){finishBattle(true);battlePrevious=null;if(current){current.partial=true;close('页面休眠/采样中断');}current=null;previous=null;samples={};}
       lastSeen=now;
       if(!current)current=start(s,true);
       if(raw!==rawOld){
+        sampleBattle(s);
         if(previous){
           const delta=s.adv.runs-previous.adv.runs;
           if(delta!==0||s.adv.chapter!==previous.adv.chapter){
@@ -142,10 +186,11 @@
         if(m.level>=100||pct===100)eta='满级或等级上限';if(s.adv.paused)eta='已暂停';
         cards.push(`<div class="mon"><b>${esc(label)}</b> Lv.${m.level}<br>当前 ${fmt(m.xp)} XP · ${fmt(rate*60)} XP/分<br>下一级：${eta}</div>`);
       }
+      renderBattles();
       $('#mons').innerHTML=cards.join('')||'等待队伍数据';$('#status').textContent=status;
       renderLive();
     }catch(e){$('#status').textContent='读取失败：'+e.message;}
   }
-  renderLogs();tick();const timer=setInterval(tick,1000);
-  window.__pcStatsDispose=()=>{clearInterval(timer);observer.disconnect();window.removeEventListener('resize',onResize);if(current){current.partial=true;close('插件更新或停止');}host.remove();delete window.__pcStatsDispose;};
+  renderLogs();renderBattles();tick();const timer=setInterval(tick,1000);
+  window.__pcStatsDispose=()=>{finishBattle(true);clearInterval(timer);observer.disconnect();window.removeEventListener('resize',onResize);if(current){current.partial=true;close('插件更新或停止');}host.remove();delete window.__pcStatsDispose;};
 })();
