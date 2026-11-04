@@ -94,7 +94,23 @@ describe('experience accounting', () => {
     expect(m.state.battles[1]).toMatchObject({ total: 0, partial: false });
     emit(save(155), 30000, true); expect(m.state.session.partial).toBe(true);
     m.stop(); const total = m.state.session.total; emit(save(160), 31000); expect(m.state.session.total).toBe(total);
-    m.start(); m.reset(); emit(save(160), 32000); expect(m.state.session.total).toBe(5);
+    m.start(); m.reset(); emit(save(160), 32000); expect(m.state.session.total).toBe(0);
+    emit(save(165), 33000); expect(m.state.session.total).toBe(5);
+  });
+  it('ignores XP earned while disabled, including a reload before enabling', () => {
+    const {game,bus,store}=setup(), m=createExperience(game,store);m.start();
+    bus.emit('sample',{save:save(100),now:1000,gap:false});bus.emit('sample',{save:save(120),now:2000,gap:false});
+    m.stop();bus.emit('sample',{save:save(500),now:3000,gap:false});
+    store.set('settings',{experience:false});
+    const reloaded=createExperience(game,store);reloaded.start();
+    bus.emit('sample',{save:save(600),now:4000,gap:false});expect(reloaded.state.session.total).toBe(20);
+    bus.emit('sample',{save:save(610),now:5000,gap:false});expect(reloaded.state.session.total).toBe(30);
+  });
+  it('counts the actual road instead of a pending planned party', () => {
+    const session=emptySession(), first=save();first.road=['a'];first.team=['b'];first.mons.push({uid:'b',id:6,level:5,xp:0});
+    sampleSession(session,first,1000);
+    const next=structuredClone(first);next.mons[0].xp=150;next.mons[1].xp=1000;
+    sampleSession(session,next,2000);expect(session.total).toBe(50);expect(session.mons.b).toBeUndefined();
   });
 });
 
@@ -102,6 +118,12 @@ describe('game adapter and species', () => {
   it('rejects malformed saves, accepts empty game saves and does not evaluate save text', () => {
     expect(parseSave(null)).toBeNull(); expect(parseSave(JSON.stringify(save()))).toEqual(save());
     expect(() => parseSave('{')).toThrow(); expect(() => parseSave(JSON.stringify({ mons: [] }))).toThrow();
+  });
+  it.each([null,{}, {uid:'e',id:6,hp:'bad'}])('rejects malformed enemy records before module dispatch: %j', enemy => {
+    const s=save();s.adv.battle={enemies:[enemy as never]};expect(()=>parseSave(JSON.stringify(s))).toThrow('结构不支持');
+  });
+  it('accepts the native null road used during region transitions', () => {
+    const s={...save(),road:null};expect(parseSave(JSON.stringify(s))).toEqual(s);
   });
   it('calculates double weaknesses, resistance and immunity', () => {
     const chart = effectiveness(dex[6].types);
@@ -114,6 +136,14 @@ describe('game adapter and species', () => {
     expect(identifySpecies('Wild Charizard uses Ember')).toBe(6);
     expect(identifySpecies('洛托姆使用了电击', [47902])).toBe(47902);
     expect(identifySpecies('不存在的种类')).toBeUndefined();
+  });
+});
+
+describe('module event isolation', () => {
+  it('continues dispatching to healthy modules when another module throws', () => {
+    const errors:unknown[]=[], bus=new EventBus<{sample:number}>((error,key)=>errors.push({error,key})), seen:number[]=[];
+    bus.on('sample',()=>{throw new Error('broken module');});bus.on('sample',n=>seen.push(n));
+    bus.emit('sample',1);bus.emit('sample',2);expect(seen).toEqual([1,2]);expect(errors).toHaveLength(2);
   });
 });
 

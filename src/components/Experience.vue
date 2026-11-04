@@ -3,9 +3,10 @@ import { computed } from 'vue';
 import { NButton, NCard, NCollapse, NCollapseItem, NEmpty, NProgress, NTag } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
 import { duration, number, time } from '../core/format';
+import { activeTeam } from '../core/game';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const state = r.experience.state;
-const mons = computed(() => (state.save?.team || []).flatMap(uid => {
+const mons = computed(() => (state.save ? activeTeam(state.save) : []).flatMap(uid => {
   const m = state.save?.mons.find(x => x.uid === uid); if (!m) return [];
   const entry = state.session.mons[uid], elapsed = entry ? state.now - entry.start : 0;
   const rate = entry && elapsed >= 10000 ? entry.total * 60000 / elapsed : 0;

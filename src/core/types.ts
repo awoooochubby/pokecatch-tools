@@ -1,7 +1,7 @@
 export interface Mon { uid: string | number; id: number; level: number; xp: number; hp?: number; rank?: number }
 export interface GameSave {
   mons: Mon[]; team: Array<string | number>; stats?: { battles?: number };
-  road?: Array<string | number>; travel?: { to?: string[] }; link?: { side?: string; from?: string };
+  road?: Array<string | number> | null; travel?: { to?: string[] }; link?: { side?: string; from?: string };
   adv: { runs: number; chapter?: number | string; unlocked?: number; node?: number; paused?: boolean;
     event?: unknown; zone?: unknown; tower?: unknown; nodes?: Array<{ name?: string }>;
     battle?: { kind?: string; enemies: Array<{ uid: string | number; id: number; hp: number }> } | null };

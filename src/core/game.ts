@@ -1,14 +1,18 @@
 import { EventBus } from './events';
 import type { Damage, GameEvents, GameSave } from './types';
 import xpModel from '../data/experience.json';
+const validUid = (uid: unknown) => typeof uid === 'string' || typeof uid === 'number' && Number.isFinite(uid);
+export const activeTeam = (save: GameSave) => save.road?.length ? save.road : save.team;
 
 export function parseSave(raw: string | null): GameSave | null {
   if (!raw) return null;
   const s = JSON.parse(raw);
   if (!s || !Array.isArray(s.mons) || !Array.isArray(s.team) || !Number.isFinite(s.adv?.runs)
     || !s.mons.every((m: unknown) => m && typeof m === 'object' && 'uid' in m && 'id' in m && 'level' in m && 'xp' in m
-      && [m.id, m.level, m.xp].every(Number.isFinite))
-    || (s.adv.battle && !Array.isArray(s.adv.battle.enemies))) throw new Error('当前存档结构不支持');
+      && validUid(m.uid) && [m.id, m.level, m.xp].every(Number.isFinite))
+    || !s.team.every(validUid) || (s.road != null && (!Array.isArray(s.road) || !s.road.every(validUid)))
+    || (s.adv.battle != null && (!Array.isArray(s.adv.battle.enemies) || !s.adv.battle.enemies.every((e: unknown) => e && typeof e === 'object'
+      && 'uid' in e && 'id' in e && 'hp' in e && validUid(e.uid) && Number.isFinite(e.id) && Number.isFinite(e.hp))))) throw new Error('当前存档结构不支持');
   return s;
 }
 

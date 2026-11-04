@@ -66,8 +66,10 @@ try {
   await page.getByRole('tab', { name: '设置', exact: true }).click();
   const xpSwitch = page.getByRole('switch', { name: '经验统计', exact: true });
   await xpSwitch.click(); save.mons[0].xp = 175; await writeSave(); await page.waitForTimeout(1200); await waitXp(65);
-  await xpSwitch.click(); await waitXp(75);
-  save.mons[0].xp = 180; await writeSave(); await waitXp(80);
+  await xpSwitch.click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('pc-tools-v1')).data.session?.previous?.mons.some(m => m.uid === 'ally' && m.xp === 175));
+  await waitXp(65);
+  save.mons[0].xp = 180; await writeSave(); await waitXp(70);
   await page.getByRole('tab', { name: '经验', exact: true }).click(); await page.getByTestId('reset-rate').click(); await waitXp(0);
   await page.getByTestId('comparison').waitFor();
   await page.getByRole('tab', { name: '回顾', exact: true }).click();

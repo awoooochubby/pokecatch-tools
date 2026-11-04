@@ -3,6 +3,7 @@ import type { GameAdapter } from '../core/game';
 import type { Store } from '../core/storage';
 import type { GameSave, Mon } from '../core/types';
 import { earnedXp, experienceModel, xpRegion } from '../core/experience-rules';
+import { activeTeam } from '../core/game';
 
 interface Member { name: string; xp: number; ms: number; minLevel: number; maxLevel: number }
 export interface MapRecord { key: string; chapter: number; name: string; region: string; xp: number; ms: number; intervals: number;
@@ -15,7 +16,7 @@ function mapOf(s: GameSave) {
   return meta ? { key: String(chapter), chapter: chapter as number, name: meta.name, region: meta.region } : null;
 }
 function road(s: GameSave): Mon[] {
-  const ids = new Set((s.road?.length ? s.road : s.team).map(String));
+  const ids = new Set(activeTeam(s).map(String));
   return s.mons.filter(m => ids.has(String(m.uid)));
 }
 export function mapRate(row: MapRecord, uid = '') {

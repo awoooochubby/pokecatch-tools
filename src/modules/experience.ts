@@ -2,6 +2,7 @@ import { reactive } from 'vue';
 import type { GameAdapter } from '../core/game';
 import type { Store } from '../core/storage';
 import type { GameSave, Mon } from '../core/types';
+import { activeTeam } from '../core/game';
 
 export interface Session { start: number | null; total: number; partial: boolean; mons: Record<string, { start: number; total: number; partial: boolean }>; previous: { team: GameSave['team']; mons: Mon[] } | null }
 interface Battle { count: number; start: number; measuredFrom: number; end?: number; efficiencyMs?: number; partial: boolean; total: number; mons: Record<string, { name: string; xp: number }> }
@@ -15,7 +16,7 @@ export function validSession(s: Session): boolean {
 export function sampleSession(session: Session, s: GameSave, now: number) {
   session.start ??= now;
   const old = session.previous;
-  for (const uid of new Set([...s.team, ...(old?.team || [])])) {
+  for (const uid of new Set([...activeTeam(s), ...(old?.team || [])])) {
     const m = s.mons.find(x => x.uid === uid), o = old?.mons.find(x => x.uid === uid);
     if (!m) { session.partial = true; continue; }
     const entry = session.mons[uid] ??= { start: now, total: 0, partial: false };
@@ -26,7 +27,7 @@ export function sampleSession(session: Session, s: GameSave, now: number) {
     else { entry.partial = session.partial = true; }
     if (Number.isFinite(gain)) { entry.total += gain; session.total += gain; }
   }
-  session.previous = { team: [...s.team], mons: s.mons.map(m => ({ ...m })) };
+  session.previous = { team: [...activeTeam(s)], mons: s.mons.map(m => ({ ...m })) };
 }
 
 export function createExperience(game: GameAdapter, store: Store) {
@@ -36,6 +37,7 @@ export function createExperience(game: GameAdapter, store: Store) {
     history: Array.isArray(stats.history) ? stats.history : [] as Round[],
     battles: Array.isArray(stats.battleHistory) ? stats.battleHistory.slice(-50) : [] as Battle[],
     current: null as Round | null, active: null as Battle | null, now: Date.now(), save: null as GameSave | null });
+  if (store.get<Record<string, unknown>>('settings', {}).experience === false) state.session.previous = null;
   let previous: GameSave | null = null, battlePrevious: GameSave | null = null, cycleStart: number | null = null;
   let unsub: Array<() => void> = [];
   function persist() {
@@ -87,15 +89,15 @@ export function createExperience(game: GameAdapter, store: Store) {
       if (state.active && (!same || state.active.count !== count)) finishBattle(true);
       if (!state.active && s.adv.battle) {
         const clean = old && !old.adv.battle && count === (old.stats?.battles ?? -1) + 1 && s.adv.chapter === old.adv.chapter
-          && JSON.stringify(s.team) === JSON.stringify(old.team) && s.team.every(uid => {
+          && JSON.stringify(activeTeam(s)) === JSON.stringify(activeTeam(old)) && activeTeam(s).every(uid => {
             const m = s.mons.find(x => x.uid === uid), o = old.mons.find(x => x.uid === uid);
             return m && o && m.level === o.level && m.xp === o.xp;
           });
         state.active = { count: count!, start: now, measuredFrom: cycleStart, partial: !clean, total: 0, mons: {} };
       }
       if (state.active && same && old) {
-        if (JSON.stringify(old.team) !== JSON.stringify(s.team)) state.active.partial = true;
-        for (const uid of new Set([...old.team, ...s.team])) {
+        if (JSON.stringify(activeTeam(old)) !== JSON.stringify(activeTeam(s))) state.active.partial = true;
+        for (const uid of new Set([...activeTeam(old), ...activeTeam(s)])) {
           const m = s.mons.find(x => x.uid === uid), o = old.mons.find(x => x.uid === uid);
           if (!m || !o || m.level !== o.level || m.xp < o.xp) { state.active.partial = true; continue; }
           const xp = m.xp - o.xp;
@@ -111,12 +113,12 @@ export function createExperience(game: GameAdapter, store: Store) {
     previous = battlePrevious = s; persist();
   }
   return { id: 'experience', state, persist,
-    reset() { state.session = emptySession(); if (state.save) sampleSession(state.session, state.save, Date.now()); persist(); },
+    reset() { state.session = emptySession(); if (previous && state.save) sampleSession(state.session, state.save, Date.now()); persist(); },
     start() {
       if (unsub.length) return;
       unsub = [game.bus.on('sample', ({ save, now, gap }) => sample(save, now, gap)), game.bus.on('log', append),
         game.bus.on('damage', d => append(`${d.healing ? '恢复 +' : '伤害 −'}${d.value}${d.critical ? ' · 暴击' : ''}${d.status ? ' · 状态效果' : ''}`))];
     },
-    stop() { unsub.forEach(off => off()); unsub = []; finishBattle(true); if (state.current) state.current.partial = true; closeRound('模块停止'); state.session.partial = true; previous = battlePrevious = null; cycleStart = null; persist(); },
+    stop() { unsub.forEach(off => off()); unsub = []; finishBattle(true); if (state.current) state.current.partial = true; closeRound('模块停止'); state.session.partial = true; state.session.previous = null; previous = battlePrevious = null; cycleStart = null; persist(); },
   };
 }
