@@ -2,9 +2,9 @@ import { extractProgram, verifySource, ENGINE_TIMER, ENGINE_DATA_NAMES } from '.
 
 // Dynamic vendor objects stay inside the disposable worker / engine tests.
 export type Vendor = Record<string, any>;
-export async function isolatedEngine(source: string, now: number, random: () => number, record: (event: Vendor) => Vendor = event => event) {
+export async function isolatedEngine(source: string, now: number, random: () => number, record: (event: Vendor) => Vendor = event => event, extras: readonly string[] = []) {
   await verifySource(source);
-  const program = extractProgram(source), math = Object.create(Math);
+  const program = extractProgram(source, extras), math = Object.create(Math);
   math.random = random;
   let time = now;
   const t: Vendor = { Clock: { now: () => time }, addEventListener() {}, dispatchEvent() {}, __record: record };

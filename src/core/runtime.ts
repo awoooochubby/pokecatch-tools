@@ -6,6 +6,8 @@ import { createEnemies } from '../modules/enemies';
 import { createCounters } from '../modules/counters';
 import { createFarming } from '../modules/farming';
 import { createForecastModule } from '../modules/forecast';
+import { createTracker } from '../modules/tracker';
+import { createRaidPredictor } from '../modules/raid';
 import type { FeatureModule } from './types';
 
 export function createRuntime() {
@@ -17,6 +19,8 @@ export function createRuntime() {
   const farming = createFarming(game, store);
   const forecast = createForecastModule(game);
   const nodeExperience=createForecastModule(game);
+  const tracker = createTracker(game, store);
+  const raid = createRaidPredictor(game);
   const modules: Record<'experience' | 'enemies' | 'farming', FeatureModule> = { experience, enemies, farming };
   function setEnabled(id: 'experience' | 'enemies' | 'farming', enabled: boolean) {
     settings[id] = enabled;
@@ -28,9 +32,9 @@ export function createRuntime() {
   game.start();
   const flush = () => { experience.persist(); farming.persist(); };
   window.addEventListener('pagehide', flush);
-  return { store, game, settings, status, experience, enemies, counters, farming, forecast, nodeExperience, setEnabled,
+  return { store, game, settings, status, experience, enemies, counters, farming, forecast, nodeExperience, tracker, raid, setEnabled,
     saveSettings() { store.set('settings', settings); },
-    dispose() { experience.stop(); enemies.stop(); farming.stop(); forecast.dispose();nodeExperience.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
+    dispose() { experience.stop(); enemies.stop(); farming.stop(); forecast.dispose();nodeExperience.dispose(); tracker.dispose(); raid.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
   };
 }
 export type Runtime = ReturnType<typeof createRuntime>;

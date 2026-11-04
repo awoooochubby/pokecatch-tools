@@ -14,7 +14,7 @@ export async function verifySource(source: string) {
 
 // This is a version-pinned adapter, not a general interpreter for unknown code.
 // Game code is evaluated only in a disposable Worker, never in the game window.
-export function extractProgram(source: string): { root: string; expressions: Record<string, string>; factories: string[] } {
+export function extractProgram(source: string, extras: readonly string[] = []): { root: string; expressions: Record<string, string>; factories: string[] } {
   // Acorn's recursive AST intentionally crosses the dynamic vendor-code boundary.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ast = parse(source, { ecmaVersion: 'latest' }) as any;
@@ -28,6 +28,13 @@ export function extractProgram(source: string): { root: string; expressions: Rec
       const name = n.left.property.name;
       if (!root && name === 'POKEDEX' && n.right.type === 'ArrayExpression') root = n.left.object.name;
       if (n.left.object.name === root) {
+        if (extras.includes(name) && !factories[name]) {
+          if (n.right.type === 'CallExpression') factories[name] = source.slice(n.start, n.end) + ';';
+          else if (n.right.type === 'ObjectExpression') {
+            const fn = [...ancestors].reverse().find(a => a.type === 'FunctionExpression');
+            if (fn) factories[name] = '(' + source.slice(fn.start, fn.end) + ')();';
+          }
+        }
         if (names.has(name) && !expressions[name]) expressions[name] = source.slice(n.right.start, n.right.end);
         if (['Game', 'Adventure'].includes(name) && n.right.type === 'ObjectExpression' && !factories[name]) {
           const fn = [...ancestors].reverse().find(a => a.type === 'FunctionExpression');
@@ -62,5 +69,6 @@ export function extractProgram(source: string): { root: string; expressions: Rec
   walk(ast, []);
   for (const name of names) if (!expressions[name]) throw new Error('缺少引擎数据：' + name);
   if (!root || !factories.Game || !factories.Adventure) throw new Error('无法定位独立战斗引擎');
-  return { root, expressions, factories: [factories.Game, factories.Adventure] };
+  for (const name of extras) if (!factories[name]) throw new Error('缺少追踪接口：' + name);
+  return { root, expressions, factories: [factories.Game, factories.Adventure, ...extras.map(name => factories[name])] };
 }

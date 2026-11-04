@@ -10,12 +10,14 @@ import Review from './components/Review.vue';
 import Settings from './components/Settings.vue';
 import Counters from './components/Counters.vue';
 import FarmingWindow from './components/FarmingWindow.vue';
+import Tracker from './components/Tracker.vue';
+import Raid from './components/Raid.vue';
 import pkg from '../package.json';
 
 const props = defineProps<{ runtime: Runtime; styleTarget: ShadowRoot }>();
 const r = props.runtime;
 const tab = ref('overview'), handle = ref<HTMLElement>();
-const tabs = ['overview', 'experience', 'enemies', 'counters', 'review', 'settings'];
+const tabs = ['overview', 'experience', 'enemies', 'counters', 'tracker', 'raid', 'review', 'settings'];
 function tabProps(name: string) {
   return { role: 'tab', tabindex: tab.value === name ? 0 : -1, 'aria-selected': tab.value === name,
     onKeydown(e: KeyboardEvent) {
@@ -39,7 +41,7 @@ const position = computed(() => {
     top: top + 'px', '--available-height': Math.max(200, height.value - top - 8) + 'px' };
 });
 watch(() => r.settings.folded, () => r.saveSettings());
-const themes = { common: { primaryColor: '#87d9b1', primaryColorHover: '#a6ecc8', borderRadius: '10px', fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif' }, Tabs: { tabFontWeight: '600' } };
+const themes = { common: { primaryColor: '#87d9b1', primaryColorHover: '#a6ecc8', borderRadius: '10px', fontFamily: 'Inter, "Noto Sans SC", system-ui, sans-serif' }, Tabs: { tabFontWeight: '600', tabGapSmallLine: '12px' } };
 </script>
 
 <template>
@@ -52,15 +54,17 @@ const themes = { common: { primaryColor: '#87d9b1', primaryColorHover: '#a6ecc8'
       <template v-if="!r.settings.folded">
         <div class="connection"><span class="status-dot" :class="{ warning: !r.status.text.startsWith('正在') }"></span><span data-testid="status">{{ r.status.text }}</span><NTag v-if="r.experience.state.session.partial" size="small" :bordered="false" type="warning">部分数据</NTag></div>
         <div v-if="r.status.storage" class="storage-error" role="alert">{{ r.status.storage }}</div>
-        <NTabs v-model:value="tab" type="line" animated :tabs-padding="20" pane-class="tab-content" size="small">
+        <NTabs v-model:value="tab" type="line" animated :tabs-padding="16" pane-class="tab-content" size="small">
           <NTabPane name="overview" tab="概览" :tab-props="tabProps('overview')"><Overview :runtime="r" @navigate="tab = $event" /></NTabPane>
           <NTabPane name="experience" tab="经验" :tab-props="tabProps('experience')"><Experience :runtime="r" /></NTabPane>
           <NTabPane name="enemies" tab="敌情" :tab-props="tabProps('enemies')"><Enemies :runtime="r" /></NTabPane>
           <NTabPane name="counters" tab="对策" :tab-props="tabProps('counters')"><Counters :runtime="r" /></NTabPane>
+          <NTabPane name="tracker" tab="追踪" :tab-props="tabProps('tracker')"><Tracker :runtime="r" /></NTabPane>
+          <NTabPane name="raid" tab="团战" :tab-props="tabProps('raid')"><Raid :runtime="r" /></NTabPane>
           <NTabPane name="review" tab="回顾" :tab-props="tabProps('review')"><Review :runtime="r" /></NTabPane>
           <NTabPane name="settings" tab="设置" :tab-props="tabProps('settings')"><Settings :runtime="r" /></NTabPane>
         </NTabs>
-        <footer>只读游戏数据 <span>仅保存在本机</span></footer>
+        <footer>{{ r.tracker.state.running ? '自动捕捉运行中' : '自动捕捉未运行' }} <span>记录仅保存在本机</span></footer>
       </template>
     </aside>
     <FarmingWindow :runtime="r" />

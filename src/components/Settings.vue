@@ -16,5 +16,5 @@ function limit(value: number | null) { r.experience.state.limit = Math.max(1, Ma
   <NButton size="small" secondary @click="r.settings.farmingVisible = true; r.settings.farmingFolded = false; r.saveSettings()">打开刷图经验浮窗</NButton>
   <h2>数据管理</h2><div class="setting-row"><span>保留整轮历史</span><NInputNumber :value="r.experience.state.limit" :min="1" :max="100" :precision="0" style="width:120px" aria-label="保留整轮历史" @update:value="limit" /></div><NButton block secondary data-testid="export" @click="exportData">导出记录与备份</NButton>
   <p class="hint">旧版存储在首次升级时复制，原数据不会删除。备份不包含游戏存档。</p>
-  <h2>关于助手</h2><div class="setting-row"><span>PokeCatch Tools</span><strong>v{{ pkg.version }}</strong></div><p class="hint">经验、敌情与安装包使用统一版本。只读取存档和界面，不修改游戏状态，不上传记录。</p><p class="hint">本地模拟验证覆盖核心流程，尚未完成登录后的真实战斗验收。</p>
+  <h2>关于助手</h2><div class="setting-row"><span>PokeCatch Tools</span><strong>v{{ pkg.version }}</strong></div><p class="hint">经验、敌情与安装包使用统一版本。统计和模拟只读取数据；追踪器在你点击开始后自动操作游戏地图。不上传记录。</p><p class="hint">重新加载页面后，追踪任务保留，需要重新点击开始。</p>
 </template>

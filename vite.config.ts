@@ -8,7 +8,7 @@ export default defineConfig({
     entry: 'src/main.ts',
     userscript: {
       name: 'PokeCatch 游戏助手', namespace: 'local.pokecatch.tools', version: pkg.version,
-      description: '经验效率、敌情、战斗回顾与 Box 对策模拟，统一的只读游戏助手',
+      description: '经验效率、Box 对策、神兽挂机追踪与团体战胜率预测，支持天气稀有怪插队捕捉',
       match: ['https://pokecatch-online.netlify.app/*', 'https://pokecatch-online.pages.dev/*'],
       noframes: true, grant: 'none', 'run-at': 'document-idle',
       updateURL: 'https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-tools.meta.js',
