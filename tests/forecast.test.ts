@@ -80,4 +80,22 @@ integration('native full-chapter XP forecast', () => {
     expect(current.rows[0].seconds.mean).toBeLessThan(full.rows[0].seconds.mean);
     expect(s.mons[0].hp).toBe(1);
   },60000);
+  it('loads the original fixed league trainer rosters before spawning Aaron encounters', () => {
+    const t=referenceEngine(source,now),g=t.Game,s:any=snapshot(68);s.adv.unlocked=65;
+    g.sandbox(Object.assign(g.freshState(),s),()=>{
+      t.Adventure.buildChapter(60);
+      const trainers=g.S.adv.nodes.filter((node:any)=>node.type==='trainer');
+      expect(trainers.map((node:any)=>node.team?.map(([id]:number[])=>id))).toEqual([[279,184],[164,400],[457,115,456],[72,73,352]]);
+      t.Adventure.step();
+      const events=t.Adventure.step(),start=events.find((event:any)=>event.type==='battleStart');
+      expect(start.enemies.map((mon:any)=>mon.id)).toEqual([279,184]);
+    });
+  });
+  it('forecasts all Sinnoh Elite Four and champion chapters from a post-league snapshot', async () => {
+    const s:any=snapshot(95);s.adv.chapter=60;s.adv.unlocked=65;s.adv.speed=4;
+    const engine=await createForecast(source,JSON.stringify(s),now);
+    const report=await engine.run(options({chapters:[60,61,62,63,64]}),()=>{});
+    expect(report.rows.map(row=>row.chapter)).toEqual([60,61,62,63,64]);
+    for(const row of report.rows){expect(row.error).toBeUndefined();expect(row.trials).toBe(128);expect(row.battles.mean).toBeGreaterThan(0);expect(row.xp.mean).toBeGreaterThan(0);expect(row.seconds.mean).toBeGreaterThan(0);}
+  },120000);
 });

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { NAlert, NButton, NCollapse, NCollapseItem, NInputNumber, NProgress, NSelect, NSwitch, NTag } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
 import { pokemonName } from '../core/pokemon';
+import { chapterLabel } from '../core/chapters';
 import { number, duration, time } from '../core/format';
 import type { ForecastOptions } from '../simulation/forecast-types';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
@@ -12,10 +13,7 @@ const chapters = ref<number[]>(Array.isArray(saved.chapters) ? saved.chapters.fi
 const trials = ref(typeof saved.trials === 'number' && Number.isInteger(saved.trials) && saved.trials >= 128 && saved.trials <= 2048 ? saved.trials : 256);
 const full = ref(saved.full !== false), selected = ref(typeof saved.selected === 'string' ? saved.selected : '');
 watch([chapters, trials, full, selected], () => r.store.set('forecastPreferences', { chapters: chapters.value, trials: trials.value, full: full.value, selected: selected.value }), { deep: true });
-const labels: Record<string, string> = { 'QG Galaxie': '银河队基地', 'Badge Phare': '灯塔徽章', 'Badge Glaçon': '冰雪徽章', 'Monde Distorsion': '毁坏的世界', 'Route Victoire': '冠军之路',
-  'Badge Charbon': '煤炭徽章', 'Badge Forêt': '森林徽章', 'Badge Fantôme': '遗迹徽章', 'Badge Pavé': '圆石徽章', 'Badge Palustre': '湿地徽章', 'Badge Mine': '矿山徽章', 'Les Lacs': '湖泊事件',
-  'Conseil 4 : Aaron': '四天王：阿柳', 'Conseil 4 : Terry': '四天王：菊野', 'Conseil 4 : Adrien': '四天王：大叶', 'Conseil 4 : Lucio': '四天王：悟松', 'Maître de la Ligue': '联盟冠军', 'Mont Abrupt': '严酷山' };
-const name = (text: string) => labels[text] || text;
+const name = chapterLabel;
 watch(() => s.catalog, catalog => {
   if (!catalog) return;
   const valid = chapters.value.filter(id => catalog.chapters.some(ch => ch.id === id));
@@ -45,7 +43,7 @@ function exportReport() {
   <NAlert v-if="s.error" type="error" :show-icon="false">{{ s.error }}</NAlert>
   <template v-if="s.catalog">
     <small>{{ s.catalog.team.map(m => `${pokemonName(m.id)} Lv.${m.level}`).join(' / ') }}<br>自动切换{{ s.catalog.autoSwitch ? '开启' : '关闭' }} · 标准节奏每步 {{ number(s.catalog.stepMs) }}ms · 增益 ×{{ s.catalog.xpBoost }}<br>快照 {{ time(s.catalog.capturedAt) }} · 伙伴 {{ buddyLabel }}</small>
-    <h2>比较地图</h2><NSelect v-model:value="chapters" :options="chapterOptions" multiple :to="false" :disabled="s.busy" aria-label="模拟比较地图" />
+    <h2>比较地图</h2><NSelect v-model:value="chapters" :options="chapterOptions" multiple filterable :to="false" :disabled="s.busy" aria-label="模拟比较地图" />
     <div class="setting-row"><span>每图模拟次数</span><NInputNumber v-model:value="trials" :min="128" :max="2048" :precision="0" :disabled="s.busy" style="width:115px" aria-label="每图模拟次数" /></div>
     <div class="setting-row"><span>满血从章首出发</span><NSwitch v-model:value="full" :disabled="s.busy" aria-label="模拟满血出发" /></div>
     <p class="hint">{{ full ? '按切图后满血出发；途中中心按原规则治疗。' : '把快照的 HP／状态带到章首，途中治疗照常。' }}本轮升级、触顶以及失败前经验都会计入。每次开算会自动刷新队伍快照。</p>

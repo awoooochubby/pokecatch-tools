@@ -5,6 +5,7 @@ import { NButton, NSelect, NTag, NCollapse, NCollapseItem } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
 import { mapRate } from '../modules/farming';
 import { duration, number } from '../core/format';
+import { chapterLabel } from '../core/chapters';
 import Forecast from './Forecast.vue';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const s = r.farming.state, handle = ref<HTMLElement>(), { width, height } = useWindowSize();
@@ -33,8 +34,7 @@ const rows = computed(() => s.records.filter(row => !s.selected || row.mons[s.se
 const metric = computed(() => current.value && (s.selected ? current.value.mons[s.selected] : current.value));
 const rate = computed(() => current.value ? mapRate(current.value, s.selected) : null);
 const recent = computed(() => r.farming.recentRate(s.selected));
-const labels: Record<string, string> = { 'QG Galaxie': '银河队基地', 'Badge Phare': '灯塔徽章', 'Badge Glaçon': '冰雪徽章', 'Monde Distorsion': '毁坏的世界' };
-const name = (n: string) => labels[n] || n;
+const name = chapterLabel;
 function toggle() { if (width.value < 600) { compact.value = folded.value; r.settings.farmingFolded = false; } else r.settings.farmingFolded = !r.settings.farmingFolded; }
 function exportRecords() {
   const blob = new Blob([JSON.stringify({ kind: 'map-experience', exportedAt: new Date().toISOString(), metric: 'actual-save-xp-growth',

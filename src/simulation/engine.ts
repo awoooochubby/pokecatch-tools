@@ -1,5 +1,5 @@
-import { extractProgram, verifySource, ENGINE_HASH, ENGINE_TIMER } from './program';
-import type { Catalog, CombatFacts, Options, Report, Target, MatchResult, RouteResult } from './types';
+import { extractProgram, verifySource, ENGINE_HASH, ENGINE_TIMER, ENGINE_DATA_NAMES } from './program';
+import type { Catalog, CombatFacts, Options, Report, Target, MatchResult, RouteResult, RouteThreat, RouteFailure } from './types';
 import { Moments, wilson, qualifies } from './statistics';
 import { SAMPLE_BUDGET } from './planning';
 
@@ -37,7 +37,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
   const t: Vendor = { Clock: clock, addEventListener() {}, dispatchEvent() {}, __record(event: Vendor) { captured.add(event); capture?.(event); return event; } };
   const evaluate = (code: string) => new Function(program.root, 'e', ENGINE_TIMER, 'Math', 'localStorage', 'fetch', 'XMLHttpRequest', 'WebSocket', code)(
     t, (s: string) => s, () => 0, math, undefined, undefined, undefined, undefined);
-  for (const name of ['POKEDEX', 'MOVES', 'TYPE_CHART', 'CONFIG', 'EVOLUTIONS', 'TYPES', 'BASE_EXP', 'FORMS', 'UNOWN', 'STORY', 'STATUS', 'ENCOUNTERS', 'HABITATS', 'SPECIALS', 'SCENES', 'DAYTIME', 'WEATHER']) {
+  for (const name of ENGINE_DATA_NAMES) {
     evaluate(`${program.root}.${name}=(${program.expressions[name]});`);
   }
   for (const factory of program.factories) evaluate(factory);
@@ -93,23 +93,26 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     if (current) {
       if (current.boss || current.roam) throw new Error('特殊首领的机制尚未适配');
       current.enemies.forEach((m: Vendor, i: number) => { if (m.hp > 0) targets.push({ key: `current:${i}`, label: `当前 · ${g.DEX[m.id].name} Lv.${m.level}`, kind: current.kind, id: m.id, level: m.level,
-        node: copy(base.adv.nodes[base.adv.node]), foes: copy(current.enemies), selected: i, gym: current.gym, power: current.power }); });
+        node: copy(base.adv.nodes[base.adv.node]), foes: copy(current.enemies), selected: i, gym: current.gym, power: current.power, source: 'current', nodeIndex: base.adv.node, preserveHp: true }); });
     }
     const chapter = t.STORY.CHAPTERS[base.adv.chapter];
     for (const [index, node] of (base.adv.nodes || []).entries()) {
-      if (index < base.adv.node) continue;
+      if (index < base.adv.node || current && index === base.adv.node) continue;
       if (node.type === 'wild') {
-        for (const p of a.zonePool(node, base.adv.chapter)) {
+        for (const p of a.zonePool(node, base.adv.chapter, false, null, true, true)) {
           if (!p.on || !g.DEX[p.id] || !Number.isInteger(p.max)) continue;
-          targets.push({ key: `wild:${index}:${p.id}`, label: `${node.name} · ${g.DEX[p.id].name} Lv.${p.max}（区域上限）`, kind: 'wild', id: p.id, level: p.max, node: copy(node), foes: [{ id: p.id, level: p.max, foe: true, shiny: false }] });
+          targets.push({ key: `wild:${index}:${p.id}`, label: `${node.name} · ${g.DEX[p.id].name} Lv.${p.max}（可能遭遇，按区域上限）`, kind: 'wild', id: p.id, level: p.max, node: copy(node), foes: [{ id: p.id, level: p.max, foe: true, shiny: false }], source: 'wild', nodeIndex: index, levelRange: [p.min,p.max] });
         }
       } else if (node.type === 'gym') {
         const foes = t.STORY.gymTeam(base.adv.chapter, node.gym).map(([id, level]: number[]) => ({ id, level, foe: true, shiny: false }));
-        for (const [i, m] of foes.entries()) targets.push({ key: `gym:${index}:${i}`, label: `${node.name} · ${g.DEX[m.id].name} Lv.${m.level}`, kind: 'gym', id: m.id, level: m.level, node: copy(node), foes, selected: i, gym: copy(node.gym) });
+        for (const [i, m] of foes.entries()) targets.push({ key: `gym:${index}:${i}`, label: `${node.name} · ${g.DEX[m.id].name} Lv.${m.level}`, kind: 'gym', id: m.id, level: m.level, node: copy(node), foes, selected: i, gym: copy(node.gym), source: 'boss', nodeIndex: index });
+      } else if (node.type === 'trainer' && node.team?.length) {
+        const foes = node.team.map(([id,level]:number[]) => ({ id, level, foe:true, shiny:false, ...node.statMult > 1 ? {statMult:node.statMult} : {} }));
+        for (const [i,m] of foes.entries()) targets.push({key:`trainer:${index}:${i}`,label:`训练家 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:'trainer',id:m.id,level:m.level,node:copy(node),foes,selected:i,power:node.gymTrainer ? cfg.GYM_TRAINERS.damage : undefined,source:'trainer',nodeIndex:index});
       }
     }
-    catalog = { version: ENGINE_HASH.slice(0, 10), cap, candidates, targets, chapter: chapter.name, capturedAt: now,
-      activeOrder: g.activeTeam().map(String), autoSwitch: base.autoSwitch !== false,
+    catalog = { version: ENGINE_HASH.slice(0, 10), cap, candidates, targets, chapter: chapter.name, chapterIndex:base.adv.chapter,nodeIndex:base.adv.node,nodeName:base.adv.nodes?.[base.adv.node]?.name || '',randomTrainers:(base.adv.nodes||[]).filter((node:Vendor,i:number)=>(i>base.adv.node||i===base.adv.node&&!current)&&node.type==='trainer'&&!node.team?.length).length, capturedAt: now,
+      activeOrder: g.activeTeam().map(String), autoSwitch: base.autoSwitch !== false,centers:(base.adv.nodes||[]).flatMap((node:Vendor,i:number)=>node.type==='heal'?[{node:i,name:node.name}]:[]),
       warnings: ['道中单挑列表按区域最高等级；整段路线模式按游戏实际遭遇概率生成敌人。', '完整战斗期望为抽样估计，显示误差；不会把抽样全胜称为必胜。', '当前版本的招式优先度不参与行动排序；原引擎按速度处理。'] };
   });
 
@@ -130,10 +133,10 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     const foes: Vendor[] = copy(target.foes).map((m: Vendor, i: number) => ({ ...m, uid: `sim-foe:${i}`, foe: true }));
     const slots = a.fieldSize(target.kind, foes.length, target.gym?.double);
     const hpMult = (slots >= cfg.TEAM_SIZE ? 1 + cfg.ENEMY_HP_PER_ALLY * (cfg.TEAM_SIZE - 1) : 1)
-      * (target.kind === 'gym' ? cfg.GYM_HP_MULT * Number(target.gym?.power || 1) * Math.max(1, cfg.TEAM_SIZE / foes.length) ** cfg.GYM_TEAM_EXP : 1);
+      * (target.kind === 'gym' ? cfg.GYM_HP_MULT * Number(target.gym?.power || 1) * Math.max(1, cfg.TEAM_SIZE / foes.length) ** cfg.GYM_TEAM_EXP : 1) * (target.power ?? 1);
     for (const [i, m] of foes.entries()) {
       // A live target snapshot already contains its original HP multipliers.
-      if (!target.key.startsWith('current:')) { m.hpMult = hpMult; m.hp = g.maxHp(m); }
+      if (!target.preserveHp && !target.key.startsWith('current:')) { m.hpMult = hpMult; m.hp = g.maxHp(m); }
       if (target.selected !== undefined && target.selected !== i) m.hp = 0;
     }
     s.adv.nodes = [copy(target.node)]; s.adv.node = 0; s.adv.pending = null;
@@ -155,7 +158,9 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     });
   }
   function trial(s: Vendor, route: boolean) {
-    const result = { won: false, loss: 1, wear: 0, kos: 0, actions: 0, hits: 0 };
+    const result = { won: false, loss: 1, wear: 0, kos: 0, actions: 0, hits: 0, threats:[] as RouteThreat[], failure:undefined as RouteFailure | undefined };
+    const routeNodes=copy(s.adv.nodes), costs=new Map<string,RouteThreat>(), encounters=new Map<string,Target[]>();
+    let lastHurt:RouteThreat|undefined;
     const party = s.mons.filter((m: Vendor) => s.team.includes(m.uid));
     const initialLevels = party.map((m: Vendor) => m.level);
     let totalHp = 0, terminal: boolean | undefined;
@@ -167,12 +172,31 @@ export async function createSimulator(source: string, rawSave: string, now: numb
         const remaining = party.reduce((n: number, m: Vendor) => n + g.curHp(m), 0);
         result.loss = Math.max(0, Math.min(1, 1 - remaining / totalHp));
         if (party.some((m: Vendor, i: number) => m.level !== initialLevels[i])) throw new Error('模拟等级发生变化，已拒绝输出不符合固定等级条件的结果');
+        result.threats=[...costs.values()];
+        if (!won && lastHurt) {
+          const center=routeNodes.findIndex((node:Vendor,i:number)=>i>lastHurt!.node&&node.type==='heal');
+          const until=center<0?routeNodes.length:center;
+          result.failure={node:lastHurt.node,id:lastHurt.id,label:lastHurt.label,count:1,nextCenter:center<0?null:routeNodes[center].name,
+            battlesToCenter:routeNodes.filter((node:Vendor,i:number)=>i>lastHurt!.node&&i<until&&['wild','trainer','gym','static'].includes(node.type)).length,targetKey:lastHurt.targetKey};
+        }
       };
       const processEvent = (event: Vendor) => {
         if (event.type === 'attack' && event.side === 'ally') { result.actions++; if (event.damage > 0) result.hits++; }
         const uid = String(event.type === 'attack' ? event.target : event.uid);
         if (previousHp.has(uid) && typeof event.hp === 'number') {
           const previous = previousHp.get(uid)!;
+          const hurt=Math.max(0,previous-event.hp), knockout=previous>0&&event.hp<=0;
+          if (route && hurt>0) {
+            const battle=s.adv.battle, foe=event.type==='attack'&&event.side==='enemy'?battle?.enemies.find((m:Vendor)=>String(m.uid)===String(event.uid)):null;
+            const key=`${s.adv.node}:${foe?.id??'status'}`,label=foe?g.DEX[foe.id].name:'状态伤害／其他伤害';
+            let cost=costs.get(key);if(!cost){cost={node:s.adv.node,id:foe?.id,label,wear:0,kos:0,samples:1};costs.set(key,cost);}
+            cost.wear+=hurt/totalHp;cost.kos+=+knockout;lastHurt=cost;
+            if (foe) {
+              const encounterKey=JSON.stringify([s.adv.node,battle.kind,battle.enemies.map((m:Vendor)=>[m.id,m.level])]);
+              if (!encounters.has(encounterKey)) encounters.set(encounterKey,battle.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${encounterKey}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:battle.kind,id:m.id,level:m.level,node:copy(routeNodes[s.adv.node]),foes:copy(battle.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(battle.gym??null),power:battle.power,source:'diagnostic',nodeIndex:s.adv.node,preserveHp:true})));
+              cost.targetKey=encounters.get(encounterKey)![battle.enemies.findIndex((m:Vendor)=>String(m.uid)===String(event.uid))]?.key;
+            }
+          }
           if (previous > 0 && event.hp <= 0) result.kos++;
           result.wear += Math.max(0, previous - event.hp) / totalHp;
           previousHp.set(uid, event.hp);
@@ -187,6 +211,10 @@ export async function createSimulator(source: string, rawSave: string, now: numb
         for (let step = 0; step < 20000; step++) {
           if (route && s.adv.node >= s.adv.nodes.length && !s.adv.battle) { terminal = true; break; }
           if (s.adv.pending) throw new Error('剩余路线含未确认的赠送或选择，请在游戏中处理后重新读取');
+          // Capture full enemy HP before anyone acts; reasons and follow-up
+          // counter searches must not use a partly defeated sampled target.
+          if(route&&s.adv.battle){const b=s.adv.battle,k=JSON.stringify([s.adv.node,b.kind,b.enemies.map((m:Vendor)=>[m.id,m.level])]);
+            if(!encounters.has(k)) encounters.set(k,b.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${k}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:b.kind,id:m.id,level:m.level,node:copy(routeNodes[s.adv.node]),foes:copy(b.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(b.gym??null),power:b.power,source:'diagnostic',nodeIndex:s.adv.node,preserveHp:true})));}
           let events: Vendor[];
           try { events = a.step(); }
           catch (e) {
@@ -208,6 +236,11 @@ export async function createSimulator(source: string, rawSave: string, now: numb
         }
         if (terminal === undefined) throw new Error('战斗超过行动上限，未完成的样本不会计为失败或胜利');
         finish(terminal);
+        const useful=new Set([result.failure?.targetKey,...[...result.threats].sort((a,b)=>b.wear-a.wear).slice(0,2).map(t=>t.targetKey)]);
+        let diagnosticCount=catalog.targets.filter(t=>t.source==='diagnostic').length;
+        for(const target of [...encounters.values()].flat()) if(useful.has(target.key)) {
+          if(diagnosticCount<128&&!catalog.targets.some(t=>t.key===target.key)){catalog.targets.push(target);diagnosticCount++;}
+        }
       } finally { active = null; combatDefeated = false; capture = null; }
     });
     return result;
@@ -224,7 +257,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
       targets.push({ key: `custom:${i}`, label: `指定野生 · ${g.DEX[c.id].name} Lv.${c.level}`, kind: 'wild', id: c.id, level: c.level, node: { type: 'wild', name: '指定野生目标', bg: 'prairie' }, foes: [{ id: c.id, level: c.level, foe: true, shiny: false }] });
     }
     const report: Report = { catalog: copy(catalog), options: opts, results: [], routes: [], generatedAt: now,
-      assumptions: ['使用读取时刻的时间与天气，分析期间冻结时钟。', '保留闪光、地下等级、地区限制、招式重排与继承；不使用原作特性或招式优先度。', '战斗在独立状态中执行，终局后跳过经验、进化、捕获和货币奖励；路线中等级固定。', '先手与伤害区间按原引擎确定；胜率用 Wilson 95% 区间，期望缺血用有界经验 Bernstein 95% 区间，累计承伤与行动数用近似区间。', '区间为单组置信范围，不保证多方案筛选后的整体最优或整体 95% 覆盖。', '排序假设所选队伍从当前节点起生效；游戏中的待更新队伍可能在下次出发才生效。', '排序只影响当前出战队伍，不改变 box 的显示顺序，也不会自动修改存档。'] };
+      assumptions: ['使用读取时刻的时间与天气，分析期间冻结时钟。', '保留闪光、地下等级、地区限制、招式重排与继承；不使用原作特性或招式优先度。', '战斗在独立状态中执行，终局后跳过经验、进化、捕获和货币奖励；路线中等级固定。', '当前敌人单挑保留其存档 HP，但重新建立行动队列；不是对当前战斗下一回合的精确续算。路线模式保留已有队列。', '先手与伤害区间按原引擎确定；胜率用 Wilson 95% 区间，期望缺血用有界经验 Bernstein 95% 区间，累计承伤与行动数用近似区间。', '区间为单组置信范围，不保证多方案筛选后的整体最优或整体 95% 覆盖。', '排序假设所选队伍从当前节点起生效；游戏中的待更新队伍可能在下次出发才生效。', '排序只影响当前出战队伍，不改变 box 的显示顺序，也不会自动修改存档。'] };
     let completed = 0;
     if (opts.mode !== 'matrix') {
       if (selected.length > cfg.TEAM_SIZE) throw new Error('路线排序最多选择六只精灵');
@@ -236,17 +269,21 @@ export async function createSimulator(source: string, rawSave: string, now: numb
       if (total * opts.trials > SAMPLE_BUDGET) throw new Error('本次计算量过大，请降低样本数或减少排序成员');
       for (const order of search.orders) for (const autoSwitch of modes) {
         const loss = new Moments(), wear = new Moments(), kos = new Moments(); let wins = 0;
+        const threats=new Map<string,RouteThreat>(),failures=new Map<string,RouteFailure>();
         for (let i = 0; i < opts.trials; i++) {
           seed = (opts.seed + Math.imul(i + 1, 2654435761)) >>> 0;
           const s = clean(); arrange(s, order, undefined, opts.start); s.autoSwitch = autoSwitch;
           const r = trial(s, true); wins += +r.won; loss.add(r.loss); wear.add(r.wear); kos.add(r.kos);
+          for(const item of r.threats){const key=`${item.node}:${item.id??'status'}`,old=threats.get(key);if(old){old.wear+=item.wear;old.kos+=item.kos;old.samples++;}else threats.set(key,{...item});}
+          if(r.failure){const key=`${r.failure.node}:${r.failure.id??'status'}`,old=failures.get(key);if(old)old.count++;else failures.set(key,{...r.failure});}
         }
         const win = wilson(wins, opts.trials), damage = loss.interval([0, 1]);
         const route = { order, autoSwitch, trials: opts.trials, win, loss: damage, wear: wear.interval([0, Infinity]), kos: kos.interval([0, Infinity]),
-          qualified: qualifies(win, damage, opts.minWin, opts.maxLoss), baseline: autoSwitch === catalog.autoSwitch && JSON.stringify(order) === JSON.stringify(selected) };
+          qualified: qualifies(win, damage, opts.minWin, opts.maxLoss), baseline: autoSwitch === catalog.autoSwitch && JSON.stringify(order) === JSON.stringify(selected),
+          threats:[...threats.values()].map(t=>({...t,wear:t.wear/opts.trials,kos:t.kos/opts.trials})).sort((a,b)=>b.wear-a.wear),failures:[...failures.values()].sort((a,b)=>b.count-a.count) };
         report.routes.push(route); progress(++completed, total, undefined, route); await new Promise(resolve => setTimeout(resolve, 0));
       }
-      return report;
+      report.catalog=copy(catalog);return report;
     }
     if (!targets.length) throw new Error('请选择道中目标或指定物种和等级');
     const jobs = selected.flatMap(uid => targets.flatMap(target => {
@@ -272,7 +309,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
         if (r.won) hits[r.hits] = (hits[r.hits] || 0) + 1;
       }
       const win = wilson(wins, opts.trials), damage = loss.interval([0, 1]);
-      const result = { uid: job.uid, id: catalog.candidates.find(m => m.uid === job.uid)!.id, target: job.target.label, level: job.level, trials: opts.trials, wins,
+      const result = { uid: job.uid, id: catalog.candidates.find(m => m.uid === job.uid)!.id, target: job.target.label,targetId:job.target.id,targetLevel:job.target.level, level: job.level, trials: opts.trials, wins,
         win, loss: damage, actions: actions.interval([0, Infinity]), hits, facts: info, qualified: qualifies(win, damage, opts.minWin, opts.maxLoss), trainingXp };
       report.results.push(result); progress(++completed, jobs.length, result); await new Promise(resolve => setTimeout(resolve, 0));
     }

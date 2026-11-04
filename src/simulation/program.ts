@@ -4,6 +4,8 @@ export const ENGINE_HASH = version.hash;
 export const ENGINE_URL = version.url;
 export const BOOT_URL = version.boot;
 export const ENGINE_TIMER = version.timer;
+// Keep all worker bootstraps on the same audited data dependency list.
+export const ENGINE_DATA_NAMES = ['POKEDEX', 'MOVES', 'TYPE_CHART', 'CONFIG', 'EVOLUTIONS', 'TYPES', 'BASE_EXP', 'FORMS', 'UNOWN', 'STORY', 'LEAGUE_TEAMS', 'STATUS', 'ENCOUNTERS', 'HABITATS', 'SPECIALS', 'SCENES', 'DAYTIME', 'WEATHER'] as const;
 export async function verifySource(source: string) {
   const bytes = new TextEncoder().encode(source);
   const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(x => x.toString(16).padStart(2, '0')).join('');
@@ -16,7 +18,7 @@ export function extractProgram(source: string): { root: string; expressions: Rec
   // Acorn's recursive AST intentionally crosses the dynamic vendor-code boundary.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ast = parse(source, { ecmaVersion: 'latest' }) as any;
-  const names = new Set(['POKEDEX', 'MOVES', 'TYPE_CHART', 'CONFIG', 'EVOLUTIONS', 'TYPES', 'BASE_EXP', 'FORMS', 'UNOWN', 'STORY', 'STATUS', 'ENCOUNTERS', 'HABITATS', 'SPECIALS', 'SCENES', 'DAYTIME', 'WEATHER']);
+  const names = new Set<string>(ENGINE_DATA_NAMES);
   const expressions: Record<string, string> = {}, factories: Record<string, string> = {};
   let root = '';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

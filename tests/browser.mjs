@@ -103,11 +103,13 @@ try {
   await page.getByRole('tab', {name:'对策',exact:true}).click();
   await page.getByTestId('load-box').click();
   await page.getByText(/上限 52/).waitFor({ timeout:30000 });
+  await page.getByRole('button',{name:/高级设置与自选候选/}).click();
   const samples = page.getByText('每组样本数',{exact:true}).locator('..').locator('input');
   await samples.fill('128'); await samples.press('Tab');
   await page.getByRole('tab',{name:'概览',exact:true}).click();
   await page.getByTestId('load-box').waitFor({state:'detached'});
   await page.getByRole('tab',{name:'对策',exact:true}).click();
+  await page.getByRole('button',{name:/高级设置与自选候选/}).click();
   assert.equal(await samples.inputValue(),'128');
   await page.getByTestId('workload').filter({hasText:'2 组'}).waitFor();
   const manualTarget=page.getByPlaceholder('图鉴编号:等级，例如 478:52, 460:50');
@@ -118,6 +120,8 @@ try {
   // A recoverable input error must not destroy the verified engine or force a reload.
   await page.getByTestId('run-counters').click();
   await page.getByText('分析结果',{exact:true}).waitFor({timeout:30000});
+  await page.getByTestId('counter-recommendation').waitFor();
+  assert.match(await page.getByTestId('counter-reason').innerText(),/速度|损血/);
   await page.getByText(/^火伊布 Lv.52 · (?:达到门槛|未达到门槛)$/).waitFor();
   await page.getByText(/独立模拟中 · 可随时取消/).waitFor({state:'hidden'});
   await page.getByText('Box 对各敌人的战损',{exact:true}).first().click();
@@ -141,6 +145,31 @@ try {
   await page.getByRole('button',{name:'取消',exact:true}).click();
   await page.getByText('已取消，请重新读取快照',{exact:false}).waitFor();
   console.log('PASS: real-engine Worker, form persistence, recoverable errors, workload estimate, matrix, order comparison, cancellation and read-only save');
+  const dangerSave={trainer:{},travel:{to:['sinnoh']},mons:[{uid:'bad-ally',id:129,level:5,xp:0,reg:'sinnoh'},{uid:'counter-ally',id:136,level:52,xp:0,reg:'sinnoh'}],team:['bad-ally'],road:['bad-ally'],stats:{battles:1},
+    adv:{chapter:55,unlocked:55,runs:1,speed:1,layout:6,gifts:{},badges:[],kept:{},loops:[],pending:null,node:0,
+      nodes:[{type:'trainer',name:'危险训练家',trainer:'测试训练家',sprite:'youngster',bg:'cave',team:[[478,52]]},{type:'trainer',name:'后续训练家',trainer:'测试训练家',sprite:'youngster',bg:'cave',team:[[10,1]]},{type:'heal',name:'Frimapic',bg:'town'}],
+      battle:{kind:'trainer',trainer:'测试训练家',enemies:[{uid:'live-foe',id:478,level:52,xp:0,foe:true,hp:80,hpMult:1}],allies:[],foes:[],queue:[],slots:1,turn:0,calm:0}}};
+  await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),dangerSave);
+  await page.getByTestId('load-box').click();await page.getByTestId('counter-chapter').filter({hasText:'冰雪徽章'}).waitFor();
+  assert.match(await page.getByTestId('enemy-context').innerText(),/正在进行/);
+  await samples.fill('128');await samples.press('Tab');
+  await page.getByTestId('diagnose-route').click();
+  await page.getByTestId('route-reason').waitFor({timeout:60000});
+  assert.match(await page.getByTestId('route-reason').innerText(),/雪妖女/);
+  assert.match(await page.getByTestId('route-reason').innerText(),/切锋市/);
+  assert.match(await page.getByTestId('route-reason').innerText(),/还隔着 1 场战斗/);
+  await page.getByTestId('counter-culprit').click();await page.getByTestId('run-counters').click();
+  await page.getByTestId('counter-phase').filter({hasText:'计算完成'}).waitFor({timeout:60000});
+  await page.getByTestId('counter-recommendation').filter({hasText:'火伊布'}).waitFor();
+  await page.getByTestId('counter-recommendation').scrollIntoViewIfNeeded();
+  await page.screenshot({path:'test-results/counter-reasons.png'});
+  assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
+  dangerSave.adv.battle.enemies[0].hp=79;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),dangerSave);
+  await page.getByTestId('counter-stale').waitFor();
+  dangerSave.adv.chapter=56;dangerSave.adv.unlocked=56;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),dangerSave);
+  await page.getByTestId('counter-chapter').filter({hasText:'银河队基地'}).waitFor({timeout:30000});
+  assert.equal(await page.getByTestId('counter-recommendation').count(),0);
+  console.log('PASS: live chapter/enemy labels, evidence of defeat before the next center and actionable counter recommendation');
   // Isolate farming from the old session fixtures: exact cross-level XP,
   // chapter boundaries, independent floating UI, persistence and backup.
   await page.evaluate(() => { window.__pcToolsDispose(); localStorage.removeItem('pc-tools-v1'); localStorage.removeItem('pc-stat-session-v1'); });
@@ -203,6 +232,15 @@ try {
   assert.ok(forecastReport.rows.some(row=>row.rate.mean>0));
   assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(forecastSave));
   await page.screenshot({path:'test-results/forecast.png'});
+  forecastSave.adv.chapter=60;forecastSave.adv.unlocked=65;forecastSave.mons.forEach(m=>m.level=95);
+  await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),forecastSave);
+  await float.getByTestId('load-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'队伍已就绪'}).waitFor({timeout:30000});
+  await float.getByLabel('模拟比较地图').click();await float.getByLabel('模拟比较地图').locator('input').fill('阿柳');
+  await page.getByText('四天王：阿柳（当前）',{exact:true}).click();await page.keyboard.press('Escape');
+  await float.getByTestId('run-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'比较完成'}).waitFor({timeout:120000});
+  const aaronRow=float.getByTestId('forecast-row').filter({hasText:'四天王：阿柳'});await aaronRow.waitFor();
+  assert.ok(!(await aaronRow.innerText()).includes('暂不能计算'));assert.match(await aaronRow.innerText(),/预计 XP/);
+  console.log('PASS: Aaron league XP forecast through the actual worker and floating window');
   forecastSave.mons[0].xp=10;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),forecastSave);
   await float.getByText('队伍、经验或加成已变化，结果对应读取时快照；重新读取后再比较。',{exact:true}).waitFor();
   await float.getByTestId('run-forecast').click();await float.getByTestId('cancel-forecast').click();

@@ -5,6 +5,7 @@ import { verifySource } from '../src/simulation/program';
 import { Moments, wilson, qualifies } from '../src/simulation/statistics';
 import type { Options } from '../src/simulation/types';
 import { estimateWork, parseCustomTargets } from '../src/simulation/planning';
+import { referenceEngine } from './reference-engine';
 
 describe('simulation statistics and bounded searches', () => {
   it('does not label a finite all-win sample as guaranteed', () => { const e = wilson(1024, 1024); expect(e.mean).toBe(1); expect(e.low).toBeLessThan(1); expect(e.low).toBeGreaterThan(.99); });
@@ -40,6 +41,41 @@ const options = (changes: Partial<Options> = {}): Options => ({ trials: 128, see
   maxLoss: .3, minWin: .95, mode: 'matrix', autoSwitch: 'current', ...changes });
 integration('audited current game engine', () => {
   const source = hasEngine ? readFileSync('.cache/engine.js', 'utf8') : '';
+  it('keeps current surviving enemies separate from future nodes and excludes already defeated members', async () => {
+    const s:any=snapshot();s.adv.nodes[0]={type:'trainer',name:'本场训练家',trainer:'训练家',sprite:'youngster',team:[[10,1],[478,52]]};
+    s.adv.battle={kind:'trainer',enemies:[{uid:'dead',id:10,level:1,hp:0},{uid:'alive',id:478,level:52,hp:80}]};
+    const engine=await createSimulator(source,JSON.stringify(s),now);
+    expect(engine.catalog.targets.filter(t=>t.source==='current').map(t=>t.id)).toEqual([478]);
+    expect(engine.catalog.targets.filter(t=>t.source!=='current').every(t=>t.nodeIndex!==0)).toBe(true);
+  });
+  it('lists native fixed league trainers in the correct chapter and preserves their HP model', async () => {
+    const t=referenceEngine(source,now),s:any=Object.assign(t.Game.freshState(),snapshot([136]));s.adv.chapter=60;s.adv.unlocked=65;
+    let hp=0;
+    t.Game.sandbox(s,()=>{t.Adventure.buildChapter(60);t.Adventure.step();t.Adventure.step();hp=t.Game.curHp(s.adv.battle.enemies[0]);});
+    const saved=JSON.parse(JSON.stringify(s));saved.adv.battle=null;saved.adv.node=0;
+    const engine=await createSimulator(source,JSON.stringify(saved),now);
+    expect(engine.catalog.chapterIndex).toBe(60);expect(engine.catalog.targets.filter(t=>t.source==='trainer')).toHaveLength(10);
+    const target=engine.catalog.targets.find(t=>t.source==='trainer'&&t.id===279)!;
+    expect(target.level).toBe(74);
+    const report=await engine.run(options({targetKeys:[target.key]}),()=>{});expect(report.results[0].facts.enemyHp).toBe(hp);
+  },30000);
+  it('explains an actual defeat before the next center and keeps a usable counter target', async () => {
+    const s:any=snapshot([129]);s.mons[0].level=5;
+    s.adv.nodes=[{type:'trainer',name:'危险训练家',trainer:'测试训练家',sprite:'youngster',bg:'cave',team:[[478,52]]},
+      {type:'trainer',name:'后续训练家',trainer:'测试训练家',sprite:'youngster',bg:'cave',team:[[10,1]]},{type:'heal',name:'Frimapic',bg:'town'}];
+    const engine=await createSimulator(source,JSON.stringify(s),now),report=await engine.run(options({mode:'route'}),()=>{}),route=report.routes[0];
+    expect(route.win.mean).toBe(0);expect(route.failures?.[0]).toMatchObject({node:0,id:478,count:128,nextCenter:'Frimapic',battlesToCenter:1});
+    expect(route.threats?.[0]).toMatchObject({id:478,wear:1,kos:1});
+    const key=route.failures![0].targetKey!,target=report.catalog.targets.find(t=>t.key===key)!;
+    expect(target.source).toBe('diagnostic');expect(target.foes[0].hp).toBeGreaterThan(0);
+    const counter=await engine.run(options({targetKeys:[key]}),()=>{});
+    expect(counter.results[0].facts.enemyHp).toBe(target.foes[0].hp);
+  },30000);
+  it('does not invent a before-center defeat when the route is completed', async () => {
+    const s:any=snapshot([136]);s.adv.nodes=[{type:'trainer',name:'容易的训练家',trainer:'测试训练家',sprite:'youngster',bg:'cave',team:[[10,1]]},{type:'heal',name:'Frimapic',bg:'town'}];
+    const engine=await createSimulator(source,JSON.stringify(s),now),report=await engine.run(options({mode:'route'}),()=>{});
+    expect(report.routes[0].win.mean).toBe(1);expect(report.routes[0].failures).toEqual([]);
+  },30000);
   it('uses the real engine for final-hit counting, repeatability and no snapshot writes', async () => {
     const save = JSON.stringify(snapshot()), engine = await createSimulator(source, save, now);
     expect(engine.catalog.cap).toBe(52); expect(engine.catalog.targets.length).toBeGreaterThan(0);

@@ -13,7 +13,7 @@ export function createRuntime() {
   const settings = reactive({ folded: false, experience: true, enemies: true, farming: true, farmingVisible: true, farmingFolded: false, ...store.get<Record<string, boolean>>('settings', {}) });
   const status = reactive({ text: '等待游戏存档', now: Date.now(), storage: store.error });
   const experience = createExperience(game, store), enemies = createEnemies(game, store);
-  const counters = createCounters();
+  const counters = createCounters(game);
   const farming = createFarming(game, store);
   const forecast = createForecastModule(game);
   const modules: Record<'experience' | 'enemies' | 'farming', FeatureModule> = { experience, enemies, farming };
