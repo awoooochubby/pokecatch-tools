@@ -29,7 +29,7 @@ beforeEach(() => {
   catalog = { now: Date.now(), chapter: 0, team: ['a'], targets: [243, 244, 361].map((id, i) => ({ id, name: String(id), kind: i === 2 ? 'weather' : 'roaming', owned: false,
     status: '', destinations: [{ chapter: 20 + i, region: 'johto', name: `map-${20 + i}`, until: Date.now() + 600000 }] })) };
   bus = new EventBus<GameEvents>();
-  nav = { blocked: vi.fn(() => false), battleVisible: vi.fn(() => false), showAdventure: vi.fn(), dismissCaptureNotice: vi.fn(() => false), refreshPositions: vi.fn(() => true),
+  nav = { blocked: vi.fn(() => false), battleVisible: vi.fn(() => false), showAdventure: vi.fn(), eatBerry: vi.fn(() => false), dismissCaptureNotice: vi.fn(() => false), refreshPositions: vi.fn(() => true),
     travel: vi.fn((d: any) => { save.adv.chapter = d.chapter; save.adv.nodes = [{ roamer: 243 + d.chapter - 20 }]; write(); }) };
   tracker = createTracker({ bus, auditedExperienceRules: () => true } as unknown as GameAdapter, new Store(storage), nav as HuntNavigation);
   tracker.prefs.targets = [243, 244];
@@ -72,7 +72,7 @@ describe('追踪器生命周期与自动操作', () => {
     await ready(); tracker.persist(); tracker.start();
     Object.defineProperty(document, 'hidden', { value: true, configurable: true }); reply(); expect(nav.travel).not.toHaveBeenCalled();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true }); poll(); reply(); expect(nav.travel).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(storage.getItem('pc-tools-v1')!).data.tracker).toEqual({ targets: [243, 244], mode: 'ordered', weather: null });
+    expect(JSON.parse(storage.getItem('pc-tools-v1')!).data.tracker).toEqual({ targets: [243, 244], mode: 'ordered', weather: null, berries: [] });
     tracker.dispose(); tracker = createTracker({ bus, auditedExperienceRules: () => true } as unknown as GameAdapter, new Store(storage), nav);
     expect(tracker.state.running).toBe(false); expect(tracker.prefs.targets).toEqual([243, 244]);
   });
@@ -95,5 +95,25 @@ describe('追踪器生命周期与自动操作', () => {
     });
     tracker.start(); reply();
     expect(tracker.state.running).toBe(true); expect(tracker.state.error).toBe('');
+  });
+  it('自动吃所选果子，到期续吃、缺货恢复和手动停止均生效', async () => {
+    catalog.berries = [{ key: 'pinap-berry', family: 'xp', name: '凰梨果', minutes: 60, mult: 1.25, stock: 2 }];
+    save.items = { 'pinap-berry': 2 }; save.buffs = {}; write();
+    nav.eatBerry.mockImplementation((key: string) => { save.items[key]--; save.buffs.xp = { key, until: Date.now() + 3600000 }; write(); return true; });
+    await ready(); tracker.setBerries(['pinap-berry']); tracker.start(); reply();
+    expect(nav.eatBerry).toHaveBeenCalledTimes(1); expect(save.items['pinap-berry']).toBe(1);
+    poll(); reply(); expect(nav.eatBerry).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(3600001); poll(); reply(); expect(nav.eatBerry).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(3600001); poll(); reply(); expect(nav.eatBerry).toHaveBeenCalledTimes(2);
+    expect(tracker.state.berryStatus).toContain('库存不足'); expect(tracker.state.running).toBe(true);
+    save.items['pinap-berry'] = 1; write(); poll(); reply(); expect(nav.eatBerry).toHaveBeenCalledTimes(3);
+    tracker.stop(); vi.advanceTimersByTime(3600001); poll(); expect(nav.eatBerry).toHaveBeenCalledTimes(3);
+  });
+  it('没有可执行目标时不浪费果子，未勾选时不消耗', async () => {
+    catalog.berries = [{ key: 'pinap-berry', family: 'xp', name: '凰梨果', minutes: 60, mult: 1.25, stock: 2 }];
+    save.items = { 'pinap-berry': 2 }; write();
+    await ready(); tracker.start(); reply(); expect(nav.eatBerry).not.toHaveBeenCalled();
+    tracker.stop(); tracker.setBerries(['pinap-berry']); catalog.targets.forEach((t: any) => { t.destinations = []; });
+    tracker.start(); reply(); expect(nav.eatBerry).not.toHaveBeenCalled(); expect(tracker.state.berryStatus).toContain('暂不消耗');
   });
 });

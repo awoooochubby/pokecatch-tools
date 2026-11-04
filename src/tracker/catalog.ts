@@ -1,6 +1,7 @@
 import { isolatedEngine, type Vendor } from '../simulation/isolated';
 import { dex } from '../core/pokemon';
 import type { Destination, HuntCatalog, HuntTarget } from './types';
+import { berryNames } from './berries';
 
 const copy = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 export async function createHuntCatalog(source: string) {
@@ -90,7 +91,11 @@ export async function createHuntCatalog(source: string) {
         }
       }
       for (const target of weather.values()) { if (target.owned) target.status = '已拥有'; targets.push(target); }
-      return { now, targets, chapter: s.adv.chapter, team };
+      const berries = Object.entries(t.CONFIG.BUFF_BERRIES).map(([key, value]) => {
+        const b = value as Vendor;
+        return { key, name: berryNames[key] || b.name, family: b.family, mult: b.mult, minutes: t.CONFIG.BUFF_MIN, stock: g.itemCount(key) };
+      });
+      return { now, targets, chapter: s.adv.chapter, team, berries };
     });
   };
 }

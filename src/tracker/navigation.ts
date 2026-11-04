@@ -9,6 +9,13 @@ export class HuntNavigation {
   showAdventure() {
     if (!this.doc.querySelector('#screen-adventure.active') && !this.blocked()) this.click('#tabs [data-screen="adventure"]');
   }
+  eatBerry(key: string) {
+    if (!/^[a-z-]+-berry$/.test(key) || this.blocked() || this.doc.hidden) return false;
+    this.showAdventure();
+    const button = this.doc.querySelector<HTMLButtonElement>(`#bag-panel .bag-cell.berry[data-k="${key}"]`);
+    if (!button || button.disabled) return false;
+    button.click(); return true;
+  }
   dismissCaptureNotice() {
     // Automatic capture cards have no close/nav controls and one harmless result
     // acknowledgement. A manually opened dex/mon card is left untouched.

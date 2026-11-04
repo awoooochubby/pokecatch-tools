@@ -6,7 +6,7 @@ import type { HuntCatalog, HuntTarget, TrackerPrefs } from '../src/tracker/types
 import { referenceEngine } from './reference-engine';
 
 const target = (id: number, kind: HuntTarget['kind'], ch: number): HuntTarget => ({ id, name: String(id), kind, owned: false, status: '', destinations: [{ chapter: ch, region: 'johto', name: String(ch), until: 1000 }] });
-const prefs: TrackerPrefs = { targets: [243, 244], mode: 'ordered', weather: null };
+const prefs: TrackerPrefs = { targets: [243, 244], mode: 'ordered', weather: null, berries: [] };
 const catalog = (targets = [target(243, 'roaming', 20), target(244, 'roaming', 21), target(361, 'weather', 22)]): HuntCatalog => ({ now: 100, chapter: 0, team: ['a'], targets });
 describe('挂机调度', () => {
   it('按用户顺序追踪，只有实际捕获后才换目标', () => {

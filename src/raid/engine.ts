@@ -5,8 +5,17 @@ import type { RaidInput, RaidReport } from './types';
 
 class Victory extends Error {}
 export async function predictRaid(source: string, raw: string, now: number, input: RaidInput, trials = 512,
-  progress: (done: number) => void = () => {}, baseSeed = 8349271): Promise<RaidReport> {
+  progress: (done: number, total: number) => void = () => {}, baseSeed = 8349271): Promise<RaidReport> {
   if (!Number.isInteger(trials) || trials < 1 || trials > 4096) throw new Error('模拟次数应为 1–4096');
+  if (input.alternateAllies) {
+    const signature = (mons: typeof input.allies) => JSON.stringify([...mons].sort((a, b) => a.uid.localeCompare(b.uid)));
+    if (signature(input.allies) !== signature(input.alternateAllies)) throw new Error('备选出场顺序的参战成员不一致');
+    const first = await predictRaid(source, raw, now, { ...input, alternateAllies: undefined }, trials, done => progress(done, trials * 2), baseSeed);
+    const second = await predictRaid(source, raw, now, { ...input, allies: input.alternateAllies, alternateAllies: undefined }, trials, done => progress(trials + done, trials * 2), baseSeed);
+    const worst = first.win.mean <= second.win.mean ? first : second;
+    return { ...worst, input, orderResults: [first.win, second.win],
+      win: { mean: worst.win.mean, low: Math.min(first.win.low, second.win.low), high: Math.max(first.win.high, second.win.high) } };
+  }
   let seed = baseSeed >>> 0;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const { t, setTime } = await isolatedEngine(source, now, random, undefined, ['Raids', 'LegendZones']);
@@ -51,7 +60,7 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
       });
       if (outcome) wins++;
     } catch (e) { if (e instanceof Victory) wins++; else throw e; }
-    if ((trial + 1) % 32 === 0 || trial + 1 === trials) { progress(trial + 1); await new Promise(resolve => setTimeout(resolve, 0)); }
+    if ((trial + 1) % 32 === 0 || trial + 1 === trials) { progress(trial + 1, trials); await new Promise(resolve => setTimeout(resolve, 0)); }
   }
   const team = [...input.mine.map(uid => original.mons.find((m: Vendor) => m.uid === uid)), ...input.allies]
     .map((m, i) => ({ id: m.id, name: pokemonName(m.id), level: Math.min(m.level, cfg.LEVEL), shiny: !!m.shiny, ally: i >= input.mine.length }));

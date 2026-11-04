@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { NButton, NSelect, NRadioGroup, NRadioButton, NCheckbox, NTag } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
 import { chapterLabel } from '../core/chapters';
+import { berryEffects } from '../tracker/berries';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const t = r.tracker, s = t.state, prefs = t.prefs;
 const kinds = { roaming: '游走神兽', zone: '定点神兽', weather: '天气稀有怪' };
@@ -12,6 +13,7 @@ const weatherOptions = computed(() => (s.catalog?.targets || []).filter(target =
 const selected = computed(() => prefs.targets.map(id => s.catalog?.targets.find(target => target.id === id)).filter(target => !!target));
 const wx = { snow: '雪天', storm: '雷暴雨', rain: '雨天', sun: '晴天', blizzard: '暴风雪', fog: '雾天', sand: '沙暴', ash: '火山灰', breeze: '微风' } as Record<string, string>;
 const opportunities = computed(() => (s.catalog?.targets || []).filter(target => target.kind === 'weather' && !target.owned && target.destinations.length && (prefs.weather === null || prefs.weather.includes(target.id))));
+const berryOptions = computed(() => (s.catalog?.berries || []).map(b => ({ value: b.key, label: `${b.name} · ${berryEffects[b.family] || b.family} ×${b.mult} · 库存 ${b.stock}` })));
 function updateTargets(ids: number[]) { prefs.targets = ids; t.persist(); }
 function move(index: number, delta: number) { const ids = [...prefs.targets]; [ids[index], ids[index + delta]] = [ids[index + delta], ids[index]]; updateTargets(ids); }
 const time = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { hour12: false });
@@ -29,6 +31,10 @@ const time = (value: number) => new Date(value).toLocaleTimeString('zh-CN', { ho
       <NTag v-else-if="target.owned" size="small" type="success">已完成</NTag>
     </div>
     <p class="hint">按顺序处理能抓的目标，未解锁的先等候。神兽独立队伍若与冒险队伍不同，需要先在游戏里配成一致。</p>
+    <h3>自动吃哪些果子？</h3>
+    <NSelect :value="prefs.berries" :options="berryOptions" multiple :to="false" :disabled="s.running" placeholder="不选择就不自动消耗果子" aria-label="追踪自动吃果" @update:value="t.setBerries" />
+    <p class="hint">只吃你选的果子；同类一次只选一种，新选会替换旧选。已有同类效果时等到期再续吃，缺货后继续追踪，补货后自动恢复。没有可执行的目标时暂不吃。</p>
+    <small v-if="s.berryStatus" data-testid="berry-status">{{ s.berryStatus }}</small>
     <h3>天气到了，是否插队？</h3>
     <NRadioGroup v-model:value="prefs.mode" name="hunt-mode" :disabled="s.running" @update:value="t.persist"><NRadioButton value="ordered">不允许插队</NRadioButton><NRadioButton value="interrupt">允许插队</NRadioButton></NRadioGroup>
     <p class="hint">{{ prefs.mode === 'interrupt' ? '优先抓当前天气出现、你还没拥有的稀有怪。抓到或天气结束后，自动回到原目标。' : '持续追踪你选中的目标，不会为天气稀有怪切图。' }}</p>

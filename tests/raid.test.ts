@@ -87,4 +87,14 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生团体战胜率', () => 
     await expect(predictRaid(source, raw, now, { ...input, weather: 'snow' }, 1)).rejects.toThrow('天气与快照不一致');
     await expect(predictRaid(source, raw, now, { ...input, date: '2026-11-03' }, 1)).rejects.toThrow('快照已失效');
   });
+  it('好友顺序未知时穷举两种真实阵容顺序，不猜概率权重', async () => {
+    const raw = JSON.stringify(s), alternateAllies = [...input.allies.slice(2), ...input.allies.slice(0, 2)], progress: number[][] = [];
+    const report = await predictRaid(source, raw, now, { ...input, alternateAllies }, 4, (done, total) => progress.push([done, total]));
+    expect(report.orderResults).toHaveLength(2);
+    expect(report.win.mean).toBe(Math.min(...report.orderResults!.map(r => r.mean)));
+    expect(report.win.low).toBe(Math.min(...report.orderResults!.map(r => r.low)));
+    expect(report.win.high).toBe(Math.max(...report.orderResults!.map(r => r.high)));
+    expect(progress.at(-1)).toEqual([8, 8]);
+    expect(JSON.stringify(s)).toBe(raw);
+  });
 });

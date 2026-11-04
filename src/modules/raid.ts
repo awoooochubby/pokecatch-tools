@@ -1,8 +1,8 @@
 import { reactive } from 'vue';
 import Worker from '../raid/worker?worker&inline';
 import { fetchEngineSource } from '../simulation/source';
-import { readRaids, raidDate } from '../raid/read';
-import type { RaidInput, RaidReport } from '../raid/types';
+import { readRaidCatalog, raidDate } from '../raid/read';
+import type { RaidInput, RaidReport, RaidEntry } from '../raid/types';
 import type { GameAdapter } from '../core/game';
 
 export function raidContext(raw: string, input: RaidInput, now: number) {
@@ -11,10 +11,12 @@ export function raidContext(raw: string, input: RaidInput, now: number) {
     mine: (s.eventTeams?.[`raid:${input.region}`] || []).map((uid: string | number) => {
       const m = s.mons.find((m: any) => m.uid === uid); return m && { uid, id: m.id, level: m.level, rank: m.rank, shiny: m.shiny, statMult: m.statMult };
     }), allies: input.allies.map(m => ({ uid: m.uid, id: m.id, level: m.level, rank: m.rank, shiny: m.shiny, statMult: m.statMult, bot: m.bot })),
+    alternateAllies: input.alternateAllies?.map(m => m.uid),
     buffs: s.buffs, autoSwitch: s.autoSwitch, speed: s.adv.speed });
 }
 export function createRaidPredictor(game: GameAdapter) {
-  const state = reactive({ inputs: [] as RaidInput[], selected: '', busy: false, done: 0, total: 512, report: null as RaidReport | null,
+  const state = reactive({ inputs: [] as RaidInput[], entries: [] as RaidEntry[], reports: {} as Record<string, RaidReport>, failures: {} as Record<string, string>,
+    selected: '', busy: false, done: 0, total: 512, sampleTotal: 512, completed: 0, count: 0, current: '', report: null as RaidReport | null,
     error: '', phase: '读取游戏里已配置的异色团体战，预测从入口打败首领的成功率', stale: false });
   let worker: globalThis.Worker | null = null, controller: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined, context = '';
   const now = () => Math.max(Date.now(), Number(localStorage.getItem('pokecatch.clock')) || 0);
@@ -23,7 +25,7 @@ export function createRaidPredictor(game: GameAdapter) {
   function fail(message: string) { stop(); state.error = message; state.phase = '预测未完成'; }
   async function snapshot(signal: AbortSignal) {
     if (!game.auditedExperienceRules()) throw new Error('当前游戏版本尚未适配团体战预测');
-    if (!JSON.parse(rawSave()).adv?.event?.raid) {
+    {
       if (!document.querySelector('#screen-raid.active')) {
         const nav = document.querySelector<HTMLElement>('#tabs [data-screen="raid"]');
         if (!nav || nav.classList.contains('locked')) throw new Error('请先解锁游戏中的异色团体战');
@@ -41,11 +43,14 @@ export function createRaidPredictor(game: GameAdapter) {
     }
     if (signal.aborted) return null;
     const raw = rawSave(), time = now();
-    return { raw, time, inputs: readRaids(document, raw, time) };
+    const entries = readRaidCatalog(document, raw, time);
+    if (!entries.length) throw new Error('没有读取到已解锁的团体战，请先在游戏里打开今日团体战');
+    return { raw, time, entries, inputs: entries.flatMap(entry => entry.input ? [entry.input] : []) };
   }
-  async function load(run = false) {
+  async function load(run: 'all' | 'one' | false = false) {
     if (state.busy) return;
     stop(); context = ''; state.error = ''; state.busy = true; state.done = 0; state.stale = false; state.report = null;
+    state.reports = {}; state.failures = {}; state.completed = 0; state.count = 0;
     state.phase = '读取团体战首领、自己的精灵与两名队友';
     const abort = controller = new AbortController();
     timer = setTimeout(() => fail('团体战读取超时，请重试'), 30000);
@@ -53,42 +58,54 @@ export function createRaidPredictor(game: GameAdapter) {
       const data = await snapshot(abort.signal);
       if (!data || abort.signal.aborted) return;
       const selected = state.selected;
-      state.inputs = data.inputs;
-      state.selected = data.inputs.some(i => i.region === selected) ? selected : data.inputs[0].region;
-      if (!run) { clearTimeout(timer); state.busy = false; state.phase = '配置已就绪，选择团体战后预测'; return; }
-      if (selected && selected !== state.selected) throw new Error('所选团体战配置已改变，请重新选择');
-      const input = data.inputs.find(i => i.region === state.selected)!;
+      state.inputs = data.inputs; state.entries = data.entries;
+      state.selected = data.entries.some(i => i.region === selected) ? selected : data.entries[0].region;
+      if (!run) { clearTimeout(timer); state.busy = false; state.phase = `已读取 ${data.entries.length} 场团体战，${data.inputs.length} 场配置完整`; return; }
+      const queue = run === 'all' ? [...data.inputs] : data.inputs.filter(input => input.region === selected);
+      if (!queue.length) throw new Error(run === 'all' ? '全部场次均缺少完整阵容，请按列表提示补齐配置' : '本场阵容不完整，请按列表提示补齐配置');
+      state.count = queue.length;
       const source = await fetchEngineSource(abort.signal);
       if (abort.signal.aborted) return;
-      context = raidContext(data.raw, input, data.time);
+      const contexts: Record<string, string> = {};
+      const next = () => {
+        const input = queue.shift();
+        if (!input) {
+          clearTimeout(timer); state.busy = false; state.current = ''; state.phase = `预测完成 · ${Object.keys(state.reports).length}/${data.entries.length} 场已计算`;
+          state.report = state.reports[state.selected] || null; worker?.terminate(); worker = null; return;
+        }
+        state.current = input.region; state.done = 0; state.sampleTotal = input.alternateAllies ? state.total * 2 : state.total;
+        contexts[input.region] = raidContext(data.raw, input, data.time);
+        context = JSON.stringify(contexts);
+        clearTimeout(timer); timer = setTimeout(() => { state.failures[input.region] = '本场预测超时'; fail('本场预测超过两分钟，已停止；已完成的场次保留'); }, 120000);
+        worker!.postMessage({ source, save: data.raw, now: data.time, input: JSON.parse(JSON.stringify(input)), trials: state.total });
+      };
       worker = new Worker();
-      worker.onmessage = (event: MessageEvent<{ type: string; done?: number; report?: RaidReport; message?: string }>) => {
+      worker.onmessage = (event: MessageEvent<{ type: string; done?: number; total?: number; report?: RaidReport; message?: string }>) => {
         if (abort.signal.aborted) return;
         const msg = event.data;
-        if (msg.type === 'progress') state.done = msg.done!;
-        if (msg.type === 'error') fail(msg.message!);
-        if (msg.type === 'done') { clearTimeout(timer); state.busy = false; state.report = msg.report!; state.phase = '预测完成'; worker?.terminate(); worker = null; }
+        if (msg.type === 'progress') { state.done = msg.done!; state.sampleTotal = msg.total || state.total; }
+        if (msg.type === 'error') { state.failures[state.current] = msg.message!; state.completed++; next(); }
+        if (msg.type === 'done') { state.reports[msg.report!.input.region] = msg.report!; state.completed++;
+          state.report = state.reports[state.selected] || null; next(); }
       };
       worker.onerror = () => fail('团体战模拟进程失败，请重试');
-      clearTimeout(timer); timer = setTimeout(() => fail('预测超过两分钟，已停止'), 120000);
       state.phase = '用原引擎连续模拟道中、中心和首领';
-      worker.postMessage({ source, save: data.raw, now: data.time, input: JSON.parse(JSON.stringify(input)), trials: state.total });
+      next();
     } catch (e) { if (!abort.signal.aborted) fail((e as Error).message); }
   }
   const off = game.bus.on('sample', () => {
     if (!context) return;
-    const input = state.report?.input || state.inputs.find(i => i.region === state.selected);
-    if (!input) return;
     try {
       const time = now(), raw = rawSave();
-      state.stale = raidContext(raw, input, time) !== context;
-      if (document.querySelector('#raid-root .rc-card[data-rc]') || JSON.parse(raw).adv?.event?.raid) {
-        const live = readRaids(document, raw, time).find(i => i.region === input.region);
-        if (!live || raidContext(raw, live, time) !== context) state.stale = true;
+      const contexts: Record<string, string> = JSON.parse(context), live = readRaidCatalog(document, raw, time);
+      state.stale = false;
+      for (const [region, key] of Object.entries(contexts)) {
+        const input = live.find(entry => entry.region === region)?.input;
+        if (!input || raidContext(raw, input, time) !== key) state.stale = true;
       }
     } catch { state.stale = true; }
   });
-  return { state, load: () => load(), run: () => load(true),
-    select(region: string) { state.selected = region; state.report = null; state.stale = false; context = ''; state.phase = '配置已就绪，点击预测成功率'; },
+  return { state, load: () => load(), run: () => load('all'), runOne: () => load('one'),
+    select(region: string) { state.selected = region; state.report = state.reports[region] || null; },
     cancel() { stop(); state.phase = '已取消预测'; }, dispose() { stop(); off(); } };
 }

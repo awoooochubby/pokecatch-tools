@@ -8,7 +8,8 @@ export interface HuntTarget {
   id: number; name: string; kind: HuntKind; owned: boolean; status: string;
   destinations: Destination[];
 }
-export interface HuntCatalog { now: number; targets: HuntTarget[]; chapter: number; team: string[]; }
+export interface HuntBerry { key: string; name: string; family: string; mult: number; minutes: number; stock: number; }
+export interface HuntCatalog { now: number; targets: HuntTarget[]; chapter: number; team: string[]; berries?: HuntBerry[]; }
 export interface HuntJob { id: number; kind: HuntKind; destination: Destination; interrupt: boolean; }
-export interface TrackerPrefs { targets: number[]; mode: 'interrupt' | 'ordered'; weather: number[] | null; }
+export interface TrackerPrefs { targets: number[]; mode: 'interrupt' | 'ordered'; weather: number[] | null; berries: string[]; }
 export interface TrackerLog { time: number; text: string; }
