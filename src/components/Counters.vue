@@ -6,6 +6,7 @@ import type { Options, Estimate } from '../simulation/types';
 import { dex, pokemonName } from '../core/pokemon';
 import { chapterLabel } from '../core/chapters';
 import { estimateWork, parseCustomTargets, SAMPLE_BUDGET } from '../simulation/planning';
+import TeamPlanner from './TeamPlanner.vue';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const c = r.counters, s = c.state;
 type Preferences = { mode: string; candidates: string[]; targets: string[]; custom: string; trials: number; seed: number; full: boolean; maxLoss: number; minWin: number; auto: Options['autoSwitch']; snapshotAt: number; snapshotChapter?: number; enemySource?: string };
@@ -98,6 +99,7 @@ const baseline=computed(()=>(s.report?.results||[]).filter(row=>row.target===rec
   <NAlert v-if="s.stale" type="warning" :show-icon="false" style="margin-top:12px" data-testid="counter-stale">游戏中的敌人或队伍已变化。下面是读取时的快照，请更新本章敌情后再算。</NAlert>
   <template v-if="s.catalog">
     <div class="counter-context section-card"><strong data-testid="counter-chapter">{{ chapterLabel(s.catalog.chapter) }}</strong><small>{{ chapterLabel(s.catalog.nodeName || '正在走图') }} · 等级上限 {{ s.catalog.cap }} · 读取于 {{ new Date(s.catalog.capturedAt).toLocaleTimeString() }}</small></div>
+    <TeamPlanner :runtime="r" />
     <NButton block secondary :disabled="s.busy || s.stale" data-testid="diagnose-route" @click="diagnose">检查当前队伍：能否撑到下个中心？</NButton>
     <template v-if="route">
       <h3 ref="routeHeadingEl">{{ route.win.mean === 1 ? '这批模拟均走完了剩余章节' : '这支队伍存在中途战败风险' }}</h3>

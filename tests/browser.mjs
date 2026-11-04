@@ -164,11 +164,31 @@ try {
   await page.getByTestId('counter-recommendation').scrollIntoViewIfNeeded();
   await page.screenshot({path:'test-results/counter-reasons.png'});
   assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
+  await page.getByTestId('run-team-plan').click();
+  await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:90000});
+  await page.getByTestId('team-plan-result').first().filter({hasText:'火伊布'}).waitFor();
+  assert.match(await page.getByTestId('team-plan-result').first().innerText(),/无需练级/);
+  assert.match(await page.getByTestId('plan-baseline').innerText(),/第 3 处/);
+  const planDownload=page.waitForEvent('download');await page.getByRole('button',{name:'导出配队报告',exact:true}).click();
+  const planFile=await planDownload,planReport=JSON.parse(readFileSync(await planFile.path(),'utf8'));
+  assert.equal(planReport.options.goal.node,2);assert.equal(planReport.options.goal.from,'chapter');
+  assert.equal(planReport.baseline.win.mean,0);assert.deepEqual(planReport.plans[0].added,['counter-ally']);
+  assert.equal(planReport.plans[0].route.trials,512);assert.equal(planReport.plans[0].trainingSeconds.mean,0);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
+  await page.getByTestId('team-planner').scrollIntoViewIfNeeded();await page.screenshot({path:'test-results/team-planner.png'});
+  console.log('PASS: goal-specific minimal-disruption team plan, independent verification, training cost, export and unchanged save');
   dangerSave.adv.battle.enemies[0].hp=79;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),dangerSave);
   await page.getByTestId('counter-stale').waitFor();
+  // Routine HP/XP changes should refresh on demand rather than leaving the
+  // goal button permanently disabled while the game continues in the background.
+  await page.getByTestId('run-team-plan').click();
+  await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:90000});
+  assert.equal(await page.getByTestId('counter-stale').count(),0);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
   dangerSave.adv.chapter=56;dangerSave.adv.unlocked=56;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),dangerSave);
   await page.getByTestId('counter-chapter').filter({hasText:'银河队基地'}).waitFor({timeout:30000});
   assert.equal(await page.getByTestId('counter-recommendation').count(),0);
+  assert.equal(await page.getByTestId('team-plan-result').count(),0);
   console.log('PASS: live chapter/enemy labels, evidence of defeat before the next center and actionable counter recommendation');
   // Isolate farming from the old session fixtures: exact cross-level XP,
   // chapter boundaries, independent floating UI, persistence and backup.
