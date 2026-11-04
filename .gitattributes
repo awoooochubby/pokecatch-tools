@@ -1,0 +1,2 @@
+# Release bundles embed vendor CSS template strings. Keep upstream whitespace intact.
+*.user.js -diff -whitespace

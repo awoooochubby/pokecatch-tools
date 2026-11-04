@@ -1,0 +1,225 @@
+{
+  "engine": "cf8c0470ea5d3c4ef263688d6ef5b76c34f8c99cfddee893ec87e7e197662c9a",
+  "at": "2026-11-04T12:00:00.000Z",
+  "assumptions": [
+    "原引擎随机遭遇抽样，非解析精确期望",
+    "在线，无伙伴/经验增益，未触顶；每只精灵分别四舍五入",
+    "仅击倒奖励，不含捕获/伙伴糖果/道具；单场训练家按整队敌人算一场",
+    "满血成功清完整章；不推测战斗耗时；固定时刻的昼夜/天气/每日热点",
+    "repeat=false 保留剧情首领；repeat=true 跳过已被永久清除的 keep 首领"
+  ],
+  "summaries": [
+    {
+      "chapter": 56,
+      "title": "QG Galaxie",
+      "repeat": false,
+      "samples": 50000,
+      "phase": "day",
+      "groups": {
+        "trainer": {
+          "battlesPerRun": 7,
+          "enemiesPerRun": 14.98818,
+          "meanLevel": 54.46469551339789,
+          "minLevel": 52,
+          "maxLevel": 57,
+          "xpPerBattle": 2578.4435114285716,
+          "activeXpPerBattle": 2836.1441342857142,
+          "xpPerRun": 18049.10458
+        },
+        "gym": {
+          "battlesPerRun": 1,
+          "enemiesPerRun": 3,
+          "meanLevel": 55,
+          "minLevel": 54,
+          "maxLevel": 57,
+          "xpPerBattle": 4221,
+          "activeXpPerBattle": 4643,
+          "xpPerRun": 4221
+        }
+      },
+      "battlesPerRun": 8,
+      "enemiesPerRun": 17.98818,
+      "meanEnemyLevel": 54.55397155243054,
+      "xpPerBattle": 2783.7630725,
+      "activeXpPerBattle": 3062.0011175,
+      "xpPerRun": 22270.10458,
+      "routeXp95": [
+        22248.162769910487,
+        22292.046390089512
+      ],
+      "xpPerBattle95": [
+        2781.020346238811,
+        2786.505798761189
+      ]
+    },
+    {
+      "chapter": 56,
+      "title": "QG Galaxie",
+      "repeat": true,
+      "samples": 50000,
+      "phase": "day",
+      "groups": {
+        "trainer": {
+          "battlesPerRun": 7,
+          "enemiesPerRun": 14.99396,
+          "meanLevel": 54.46664523581495,
+          "minLevel": 52,
+          "maxLevel": 57,
+          "xpPerBattle": 2579.9744342857143,
+          "activeXpPerBattle": 2837.8281742857143,
+          "xpPerRun": 18059.82104
+        },
+        "gym": {
+          "battlesPerRun": 1,
+          "enemiesPerRun": 3,
+          "meanLevel": 55,
+          "minLevel": 54,
+          "maxLevel": 57,
+          "xpPerBattle": 4221,
+          "activeXpPerBattle": 4643,
+          "xpPerRun": 4221
+        }
+      },
+      "battlesPerRun": 8,
+      "enemiesPerRun": 17.99396,
+      "meanEnemyLevel": 54.55556753488393,
+      "xpPerBattle": 2785.10263,
+      "activeXpPerBattle": 3063.4746525,
+      "xpPerRun": 22280.82104,
+      "routeXp95": [
+        22258.924484299263,
+        22302.717595700735
+      ],
+      "xpPerBattle95": [
+        2782.365560537408,
+        2787.839699462592
+      ]
+    },
+    {
+      "chapter": 58,
+      "title": "Badge Phare",
+      "repeat": false,
+      "samples": 50000,
+      "phase": "day",
+      "groups": {
+        "wild": {
+          "battlesPerRun": 12.20084,
+          "enemiesPerRun": 12.20084,
+          "meanLevel": 64.4664859140846,
+          "minLevel": 50,
+          "maxLevel": 69,
+          "xpPerBattle": 1338.7057071480324,
+          "activeXpPerBattle": 1472.5123270201068,
+          "xpPerRun": 16333.33414
+        },
+        "trainer": {
+          "battlesPerRun": 8,
+          "enemiesPerRun": 15.98846,
+          "meanLevel": 65.24434998742844,
+          "minLevel": 62,
+          "maxLevel": 67,
+          "xpPerBattle": 4419.66259,
+          "activeXpPerBattle": 4862.0283325,
+          "xpPerRun": 35357.30072
+        },
+        "gymTrainer": {
+          "battlesPerRun": 3,
+          "enemiesPerRun": 3,
+          "meanLevel": 64.33333333333333,
+          "minLevel": 63,
+          "maxLevel": 65,
+          "xpPerBattle": 2414.248486666667,
+          "activeXpPerBattle": 2656.00806,
+          "xpPerRun": 7242.74546
+        },
+        "gym": {
+          "battlesPerRun": 1,
+          "enemiesPerRun": 4,
+          "meanLevel": 63.75,
+          "minLevel": 62,
+          "maxLevel": 67,
+          "xpPerBattle": 9527,
+          "activeXpPerBattle": 10480,
+          "xpPerRun": 9527
+        }
+      },
+      "battlesPerRun": 24.20084,
+      "enemiesPerRun": 35.1893,
+      "meanEnemyLevel": 64.7271176181396,
+      "xpPerBattle": 2828.8431442875535,
+      "activeXpPerBattle": 3111.881163629031,
+      "xpPerRun": 68460.38032,
+      "routeXp95": [
+        68408.75210628308,
+        68512.00853371691
+      ],
+      "xpPerBattle95": [
+        2826.7053286806076,
+        2830.9809598944994
+      ]
+    },
+    {
+      "chapter": 58,
+      "title": "Badge Phare",
+      "repeat": true,
+      "samples": 50000,
+      "phase": "day",
+      "groups": {
+        "wild": {
+          "battlesPerRun": 12.20104,
+          "enemiesPerRun": 12.20104,
+          "meanLevel": 64.46625205720169,
+          "minLevel": 50,
+          "maxLevel": 69,
+          "xpPerBattle": 1338.7346160655156,
+          "activeXpPerBattle": 1472.5450273091474,
+          "xpPerRun": 16333.9546
+        },
+        "trainer": {
+          "battlesPerRun": 8,
+          "enemiesPerRun": 16.00276,
+          "meanLevel": 65.24442783619826,
+          "minLevel": 62,
+          "maxLevel": 67,
+          "xpPerBattle": 4421.27706,
+          "activeXpPerBattle": 4863.80752,
+          "xpPerRun": 35370.21648
+        },
+        "gymTrainer": {
+          "battlesPerRun": 3,
+          "enemiesPerRun": 3,
+          "meanLevel": 64.33333333333333,
+          "minLevel": 63,
+          "maxLevel": 65,
+          "xpPerBattle": 2413.116253333333,
+          "activeXpPerBattle": 2654.7631733333333,
+          "xpPerRun": 7239.34876
+        },
+        "gym": {
+          "battlesPerRun": 1,
+          "enemiesPerRun": 4,
+          "meanLevel": 63.75,
+          "minLevel": 62,
+          "maxLevel": 67,
+          "xpPerBattle": 9527,
+          "activeXpPerBattle": 10480,
+          "xpPerRun": 9527
+        }
+      },
+      "battlesPerRun": 24.20104,
+      "enemiesPerRun": 35.2038,
+      "meanEnemyLevel": 64.72728057766491,
+      "xpPerBattle": 2829.2387368476725,
+      "activeXpPerBattle": 3112.3179193951996,
+      "xpPerRun": 68470.51984,
+      "routeXp95": [
+        68418.87400041295,
+        68522.16567958704
+      ],
+      "xpPerBattle95": [
+        2827.1047284021774,
+        2831.3727452931676
+      ]
+    }
+  ]
+}

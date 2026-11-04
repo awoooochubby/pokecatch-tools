@@ -1,0 +1,4341 @@
+{
+  "dex": {
+    "1": {
+      "name": "妙蛙种子",
+      "key": "bulbasaur",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Bulbizarre"
+    },
+    "2": {
+      "name": "妙蛙草",
+      "key": "ivysaur",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Herbizarre"
+    },
+    "3": {
+      "name": "妙蛙花",
+      "key": "venusaur",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Florizarre"
+    },
+    "4": {
+      "name": "小火龙",
+      "key": "charmander",
+      "types": [
+        "fire"
+      ],
+      "fr": "Salamèche"
+    },
+    "5": {
+      "name": "火恐龙",
+      "key": "charmeleon",
+      "types": [
+        "fire"
+      ],
+      "fr": "Reptincel"
+    },
+    "6": {
+      "name": "喷火龙",
+      "key": "charizard",
+      "types": [
+        "fire",
+        "flying"
+      ],
+      "fr": "Dracaufeu"
+    },
+    "7": {
+      "name": "杰尼龟",
+      "key": "squirtle",
+      "types": [
+        "water"
+      ],
+      "fr": "Carapuce"
+    },
+    "8": {
+      "name": "卡咪龟",
+      "key": "wartortle",
+      "types": [
+        "water"
+      ],
+      "fr": "Carabaffe"
+    },
+    "9": {
+      "name": "水箭龟",
+      "key": "blastoise",
+      "types": [
+        "water"
+      ],
+      "fr": "Tortank"
+    },
+    "10": {
+      "name": "绿毛虫",
+      "key": "caterpie",
+      "types": [
+        "bug"
+      ],
+      "fr": "Chenipan"
+    },
+    "11": {
+      "name": "铁甲蛹",
+      "key": "metapod",
+      "types": [
+        "bug"
+      ],
+      "fr": "Chrysacier"
+    },
+    "12": {
+      "name": "巴大蝶",
+      "key": "butterfree",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Papilusion"
+    },
+    "13": {
+      "name": "独角虫",
+      "key": "weedle",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Aspicot"
+    },
+    "14": {
+      "name": "铁壳蛹",
+      "key": "kakuna",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Coconfort"
+    },
+    "15": {
+      "name": "大针蜂",
+      "key": "beedrill",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Dardargnan"
+    },
+    "16": {
+      "name": "波波",
+      "key": "pidgey",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Roucool"
+    },
+    "17": {
+      "name": "比比鸟",
+      "key": "pidgeotto",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Roucoups"
+    },
+    "18": {
+      "name": "大比鸟",
+      "key": "pidgeot",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Roucarnage"
+    },
+    "19": {
+      "name": "小拉达",
+      "key": "rattata",
+      "types": [
+        "normal"
+      ],
+      "fr": "Rattata"
+    },
+    "20": {
+      "name": "拉达",
+      "key": "raticate",
+      "types": [
+        "normal"
+      ],
+      "fr": "Rattatac"
+    },
+    "21": {
+      "name": "烈雀",
+      "key": "spearow",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Piafabec"
+    },
+    "22": {
+      "name": "大嘴雀",
+      "key": "fearow",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Rapasdepic"
+    },
+    "23": {
+      "name": "阿柏蛇",
+      "key": "ekans",
+      "types": [
+        "poison"
+      ],
+      "fr": "Abo"
+    },
+    "24": {
+      "name": "阿柏怪",
+      "key": "arbok",
+      "types": [
+        "poison"
+      ],
+      "fr": "Arbok"
+    },
+    "25": {
+      "name": "皮卡丘",
+      "key": "pikachu",
+      "types": [
+        "electric"
+      ],
+      "fr": "Pikachu"
+    },
+    "26": {
+      "name": "雷丘",
+      "key": "raichu",
+      "types": [
+        "electric"
+      ],
+      "fr": "Raichu"
+    },
+    "27": {
+      "name": "穿山鼠",
+      "key": "sandshrew",
+      "types": [
+        "ground"
+      ],
+      "fr": "Sabelette"
+    },
+    "28": {
+      "name": "穿山王",
+      "key": "sandslash",
+      "types": [
+        "ground"
+      ],
+      "fr": "Sablaireau"
+    },
+    "29": {
+      "name": "尼多兰",
+      "key": "nidoran-f",
+      "types": [
+        "poison"
+      ],
+      "fr": "Nidoran♀"
+    },
+    "30": {
+      "name": "尼多娜",
+      "key": "nidorina",
+      "types": [
+        "poison"
+      ],
+      "fr": "Nidorina"
+    },
+    "31": {
+      "name": "尼多后",
+      "key": "nidoqueen",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "fr": "Nidoqueen"
+    },
+    "32": {
+      "name": "尼多朗",
+      "key": "nidoran-m",
+      "types": [
+        "poison"
+      ],
+      "fr": "Nidoran♂"
+    },
+    "33": {
+      "name": "尼多力诺",
+      "key": "nidorino",
+      "types": [
+        "poison"
+      ],
+      "fr": "Nidorino"
+    },
+    "34": {
+      "name": "尼多王",
+      "key": "nidoking",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "fr": "Nidoking"
+    },
+    "35": {
+      "name": "皮皮",
+      "key": "clefairy",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Mélofée"
+    },
+    "36": {
+      "name": "皮可西",
+      "key": "clefable",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Mélodelfe"
+    },
+    "37": {
+      "name": "六尾",
+      "key": "vulpix",
+      "types": [
+        "fire"
+      ],
+      "fr": "Goupix"
+    },
+    "38": {
+      "name": "九尾",
+      "key": "ninetales",
+      "types": [
+        "fire"
+      ],
+      "fr": "Feunard"
+    },
+    "39": {
+      "name": "胖丁",
+      "key": "jigglypuff",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "fr": "Rondoudou"
+    },
+    "40": {
+      "name": "胖可丁",
+      "key": "wigglytuff",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "fr": "Grodoudou"
+    },
+    "41": {
+      "name": "超音蝠",
+      "key": "zubat",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "fr": "Nosferapti"
+    },
+    "42": {
+      "name": "大嘴蝠",
+      "key": "golbat",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "fr": "Nosferalto"
+    },
+    "43": {
+      "name": "走路草",
+      "key": "oddish",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Mystherbe"
+    },
+    "44": {
+      "name": "臭臭花",
+      "key": "gloom",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Ortide"
+    },
+    "45": {
+      "name": "霸王花",
+      "key": "vileplume",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Rafflesia"
+    },
+    "46": {
+      "name": "派拉斯",
+      "key": "paras",
+      "types": [
+        "bug",
+        "grass"
+      ],
+      "fr": "Paras"
+    },
+    "47": {
+      "name": "派拉斯特",
+      "key": "parasect",
+      "types": [
+        "bug",
+        "grass"
+      ],
+      "fr": "Parasect"
+    },
+    "48": {
+      "name": "毛球",
+      "key": "venonat",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Mimitoss"
+    },
+    "49": {
+      "name": "摩鲁蛾",
+      "key": "venomoth",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Aéromite"
+    },
+    "50": {
+      "name": "地鼠",
+      "key": "diglett",
+      "types": [
+        "ground"
+      ],
+      "fr": "Taupiqueur"
+    },
+    "51": {
+      "name": "三地鼠",
+      "key": "dugtrio",
+      "types": [
+        "ground"
+      ],
+      "fr": "Triopikeur"
+    },
+    "52": {
+      "name": "喵喵",
+      "key": "meowth",
+      "types": [
+        "normal"
+      ],
+      "fr": "Miaouss"
+    },
+    "53": {
+      "name": "猫老大",
+      "key": "persian",
+      "types": [
+        "normal"
+      ],
+      "fr": "Persian"
+    },
+    "54": {
+      "name": "可达鸭",
+      "key": "psyduck",
+      "types": [
+        "water"
+      ],
+      "fr": "Psykokwak"
+    },
+    "55": {
+      "name": "哥达鸭",
+      "key": "golduck",
+      "types": [
+        "water"
+      ],
+      "fr": "Akwakwak"
+    },
+    "56": {
+      "name": "猴怪",
+      "key": "mankey",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Férosinge"
+    },
+    "57": {
+      "name": "火暴猴",
+      "key": "primeape",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Colossinge"
+    },
+    "58": {
+      "name": "卡蒂狗",
+      "key": "growlithe",
+      "types": [
+        "fire"
+      ],
+      "fr": "Caninos"
+    },
+    "59": {
+      "name": "风速狗",
+      "key": "arcanine",
+      "types": [
+        "fire"
+      ],
+      "fr": "Arcanin"
+    },
+    "60": {
+      "name": "蚊香蝌蚪",
+      "key": "poliwag",
+      "types": [
+        "water"
+      ],
+      "fr": "Ptitard"
+    },
+    "61": {
+      "name": "蚊香君",
+      "key": "poliwhirl",
+      "types": [
+        "water"
+      ],
+      "fr": "Têtarte"
+    },
+    "62": {
+      "name": "蚊香泳士",
+      "key": "poliwrath",
+      "types": [
+        "water",
+        "fighting"
+      ],
+      "fr": "Tartard"
+    },
+    "63": {
+      "name": "凯西",
+      "key": "abra",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Abra"
+    },
+    "64": {
+      "name": "勇基拉",
+      "key": "kadabra",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Kadabra"
+    },
+    "65": {
+      "name": "胡地",
+      "key": "alakazam",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Alakazam"
+    },
+    "66": {
+      "name": "腕力",
+      "key": "machop",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Machoc"
+    },
+    "67": {
+      "name": "豪力",
+      "key": "machoke",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Machopeur"
+    },
+    "68": {
+      "name": "怪力",
+      "key": "machamp",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Mackogneur"
+    },
+    "69": {
+      "name": "喇叭芽",
+      "key": "bellsprout",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Chétiflor"
+    },
+    "70": {
+      "name": "口呆花",
+      "key": "weepinbell",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Boustiflor"
+    },
+    "71": {
+      "name": "大食花",
+      "key": "victreebel",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Empiflor"
+    },
+    "72": {
+      "name": "玛瑙水母",
+      "key": "tentacool",
+      "types": [
+        "water",
+        "poison"
+      ],
+      "fr": "Tentacool"
+    },
+    "73": {
+      "name": "毒刺水母",
+      "key": "tentacruel",
+      "types": [
+        "water",
+        "poison"
+      ],
+      "fr": "Tentacruel"
+    },
+    "74": {
+      "name": "小拳石",
+      "key": "geodude",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Racaillou"
+    },
+    "75": {
+      "name": "隆隆石",
+      "key": "graveler",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Gravalanch"
+    },
+    "76": {
+      "name": "隆隆岩",
+      "key": "golem",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Grolem"
+    },
+    "77": {
+      "name": "小火马",
+      "key": "ponyta",
+      "types": [
+        "fire"
+      ],
+      "fr": "Ponyta"
+    },
+    "78": {
+      "name": "烈焰马",
+      "key": "rapidash",
+      "types": [
+        "fire"
+      ],
+      "fr": "Galopa"
+    },
+    "79": {
+      "name": "呆呆兽",
+      "key": "slowpoke",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "fr": "Ramoloss"
+    },
+    "80": {
+      "name": "呆壳兽",
+      "key": "slowbro",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "fr": "Flagadoss"
+    },
+    "81": {
+      "name": "小磁怪",
+      "key": "magnemite",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "fr": "Magnéti"
+    },
+    "82": {
+      "name": "三合一磁怪",
+      "key": "magneton",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "fr": "Magnéton"
+    },
+    "83": {
+      "name": "大葱鸭",
+      "key": "farfetchd",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Canarticho"
+    },
+    "84": {
+      "name": "嘟嘟",
+      "key": "doduo",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Doduo"
+    },
+    "85": {
+      "name": "嘟嘟利",
+      "key": "dodrio",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Dodrio"
+    },
+    "86": {
+      "name": "小海狮",
+      "key": "seel",
+      "types": [
+        "water"
+      ],
+      "fr": "Otaria"
+    },
+    "87": {
+      "name": "白海狮",
+      "key": "dewgong",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "fr": "Lamantine"
+    },
+    "88": {
+      "name": "臭泥",
+      "key": "grimer",
+      "types": [
+        "poison"
+      ],
+      "fr": "Tadmorv"
+    },
+    "89": {
+      "name": "臭臭泥",
+      "key": "muk",
+      "types": [
+        "poison"
+      ],
+      "fr": "Grotadmorv"
+    },
+    "90": {
+      "name": "大舌贝",
+      "key": "shellder",
+      "types": [
+        "water"
+      ],
+      "fr": "Kokiyas"
+    },
+    "91": {
+      "name": "刺甲贝",
+      "key": "cloyster",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "fr": "Crustabri"
+    },
+    "92": {
+      "name": "鬼斯",
+      "key": "gastly",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "fr": "Fantominus"
+    },
+    "93": {
+      "name": "鬼斯通",
+      "key": "haunter",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "fr": "Spectrum"
+    },
+    "94": {
+      "name": "耿鬼",
+      "key": "gengar",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "fr": "Ectoplasma"
+    },
+    "95": {
+      "name": "大岩蛇",
+      "key": "onix",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Onix"
+    },
+    "96": {
+      "name": "催眠貘",
+      "key": "drowzee",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Soporifik"
+    },
+    "97": {
+      "name": "引梦貘人",
+      "key": "hypno",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Hypnomade"
+    },
+    "98": {
+      "name": "大钳蟹",
+      "key": "krabby",
+      "types": [
+        "water"
+      ],
+      "fr": "Krabby"
+    },
+    "99": {
+      "name": "巨钳蟹",
+      "key": "kingler",
+      "types": [
+        "water"
+      ],
+      "fr": "Krabboss"
+    },
+    "100": {
+      "name": "霹雳电球",
+      "key": "voltorb",
+      "types": [
+        "electric"
+      ],
+      "fr": "Voltorbe"
+    },
+    "101": {
+      "name": "顽皮雷弹",
+      "key": "electrode",
+      "types": [
+        "electric"
+      ],
+      "fr": "Électrode"
+    },
+    "102": {
+      "name": "蛋蛋",
+      "key": "exeggcute",
+      "types": [
+        "grass",
+        "psychic"
+      ],
+      "fr": "Noeunoeuf"
+    },
+    "103": {
+      "name": "椰蛋树",
+      "key": "exeggutor",
+      "types": [
+        "grass",
+        "psychic"
+      ],
+      "fr": "Noadkoko"
+    },
+    "104": {
+      "name": "卡拉卡拉",
+      "key": "cubone",
+      "types": [
+        "ground"
+      ],
+      "fr": "Osselait"
+    },
+    "105": {
+      "name": "嘎啦嘎啦",
+      "key": "marowak",
+      "types": [
+        "ground"
+      ],
+      "fr": "Ossatueur"
+    },
+    "106": {
+      "name": "飞腿郎",
+      "key": "hitmonlee",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Kicklee"
+    },
+    "107": {
+      "name": "快拳郎",
+      "key": "hitmonchan",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Tygnon"
+    },
+    "108": {
+      "name": "大舌头",
+      "key": "lickitung",
+      "types": [
+        "normal"
+      ],
+      "fr": "Excelangue"
+    },
+    "109": {
+      "name": "瓦斯弹",
+      "key": "koffing",
+      "types": [
+        "poison"
+      ],
+      "fr": "Smogo"
+    },
+    "110": {
+      "name": "双弹瓦斯",
+      "key": "weezing",
+      "types": [
+        "poison"
+      ],
+      "fr": "Smogogo"
+    },
+    "111": {
+      "name": "独角犀牛",
+      "key": "rhyhorn",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "fr": "Rhinocorne"
+    },
+    "112": {
+      "name": "钻角犀兽",
+      "key": "rhydon",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "fr": "Rhinoféros"
+    },
+    "113": {
+      "name": "吉利蛋",
+      "key": "chansey",
+      "types": [
+        "normal"
+      ],
+      "fr": "Leveinard"
+    },
+    "114": {
+      "name": "蔓藤怪",
+      "key": "tangela",
+      "types": [
+        "grass"
+      ],
+      "fr": "Saquedeneu"
+    },
+    "115": {
+      "name": "袋兽",
+      "key": "kangaskhan",
+      "types": [
+        "normal"
+      ],
+      "fr": "Kangourex"
+    },
+    "116": {
+      "name": "墨海马",
+      "key": "horsea",
+      "types": [
+        "water"
+      ],
+      "fr": "Hypotrempe"
+    },
+    "117": {
+      "name": "海刺龙",
+      "key": "seadra",
+      "types": [
+        "water"
+      ],
+      "fr": "Hypocéan"
+    },
+    "118": {
+      "name": "角金鱼",
+      "key": "goldeen",
+      "types": [
+        "water"
+      ],
+      "fr": "Poissirène"
+    },
+    "119": {
+      "name": "金鱼王",
+      "key": "seaking",
+      "types": [
+        "water"
+      ],
+      "fr": "Poissoroy"
+    },
+    "120": {
+      "name": "海星星",
+      "key": "staryu",
+      "types": [
+        "water"
+      ],
+      "fr": "Stari"
+    },
+    "121": {
+      "name": "宝石海星",
+      "key": "starmie",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "fr": "Staross"
+    },
+    "122": {
+      "name": "魔墙人偶",
+      "key": "mr-mime",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "fr": "M. Mime"
+    },
+    "123": {
+      "name": "飞天螳螂",
+      "key": "scyther",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Insécateur"
+    },
+    "124": {
+      "name": "迷唇姐",
+      "key": "jynx",
+      "types": [
+        "ice",
+        "psychic"
+      ],
+      "fr": "Lippoutou"
+    },
+    "125": {
+      "name": "电击兽",
+      "key": "electabuzz",
+      "types": [
+        "electric"
+      ],
+      "fr": "Élektek"
+    },
+    "126": {
+      "name": "鸭嘴火兽",
+      "key": "magmar",
+      "types": [
+        "fire"
+      ],
+      "fr": "Magmar"
+    },
+    "127": {
+      "name": "凯罗斯",
+      "key": "pinsir",
+      "types": [
+        "bug"
+      ],
+      "fr": "Scarabrute"
+    },
+    "128": {
+      "name": "肯泰罗",
+      "key": "tauros",
+      "types": [
+        "normal"
+      ],
+      "fr": "Tauros"
+    },
+    "129": {
+      "name": "鲤鱼王",
+      "key": "magikarp",
+      "types": [
+        "water"
+      ],
+      "fr": "Magicarpe"
+    },
+    "130": {
+      "name": "暴鲤龙",
+      "key": "gyarados",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "fr": "Léviator"
+    },
+    "131": {
+      "name": "拉普拉斯",
+      "key": "lapras",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "fr": "Lokhlass"
+    },
+    "132": {
+      "name": "百变怪",
+      "key": "ditto",
+      "types": [
+        "normal"
+      ],
+      "fr": "Métamorph"
+    },
+    "133": {
+      "name": "伊布",
+      "key": "eevee",
+      "types": [
+        "normal"
+      ],
+      "fr": "Évoli"
+    },
+    "134": {
+      "name": "水伊布",
+      "key": "vaporeon",
+      "types": [
+        "water"
+      ],
+      "fr": "Aquali"
+    },
+    "135": {
+      "name": "雷伊布",
+      "key": "jolteon",
+      "types": [
+        "electric"
+      ],
+      "fr": "Voltali"
+    },
+    "136": {
+      "name": "火伊布",
+      "key": "flareon",
+      "types": [
+        "fire"
+      ],
+      "fr": "Pyroli"
+    },
+    "137": {
+      "name": "多边兽",
+      "key": "porygon",
+      "types": [
+        "normal"
+      ],
+      "fr": "Porygon"
+    },
+    "138": {
+      "name": "菊石兽",
+      "key": "omanyte",
+      "types": [
+        "rock",
+        "water"
+      ],
+      "fr": "Amonita"
+    },
+    "139": {
+      "name": "多刺菊石兽",
+      "key": "omastar",
+      "types": [
+        "rock",
+        "water"
+      ],
+      "fr": "Amonistar"
+    },
+    "140": {
+      "name": "化石盔",
+      "key": "kabuto",
+      "types": [
+        "rock",
+        "water"
+      ],
+      "fr": "Kabuto"
+    },
+    "141": {
+      "name": "镰刀盔",
+      "key": "kabutops",
+      "types": [
+        "rock",
+        "water"
+      ],
+      "fr": "Kabutops"
+    },
+    "142": {
+      "name": "化石翼龙",
+      "key": "aerodactyl",
+      "types": [
+        "rock",
+        "flying"
+      ],
+      "fr": "Ptéra"
+    },
+    "143": {
+      "name": "卡比兽",
+      "key": "snorlax",
+      "types": [
+        "normal"
+      ],
+      "fr": "Ronflex"
+    },
+    "144": {
+      "name": "急冻鸟",
+      "key": "articuno",
+      "types": [
+        "ice",
+        "flying"
+      ],
+      "fr": "Artikodin"
+    },
+    "145": {
+      "name": "闪电鸟",
+      "key": "zapdos",
+      "types": [
+        "electric",
+        "flying"
+      ],
+      "fr": "Électhor"
+    },
+    "146": {
+      "name": "火焰鸟",
+      "key": "moltres",
+      "types": [
+        "fire",
+        "flying"
+      ],
+      "fr": "Sulfura"
+    },
+    "147": {
+      "name": "迷你龙",
+      "key": "dratini",
+      "types": [
+        "dragon"
+      ],
+      "fr": "Minidraco"
+    },
+    "148": {
+      "name": "哈克龙",
+      "key": "dragonair",
+      "types": [
+        "dragon"
+      ],
+      "fr": "Draco"
+    },
+    "149": {
+      "name": "快龙",
+      "key": "dragonite",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "fr": "Dracolosse"
+    },
+    "150": {
+      "name": "超梦",
+      "key": "mewtwo",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Mewtwo"
+    },
+    "151": {
+      "name": "梦幻",
+      "key": "mew",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Mew"
+    },
+    "152": {
+      "name": "菊草叶",
+      "key": "chikorita",
+      "types": [
+        "grass"
+      ],
+      "fr": "Germignon"
+    },
+    "153": {
+      "name": "月桂叶",
+      "key": "bayleef",
+      "types": [
+        "grass"
+      ],
+      "fr": "Macronium"
+    },
+    "154": {
+      "name": "大竺葵",
+      "key": "meganium",
+      "types": [
+        "grass"
+      ],
+      "fr": "Méganium"
+    },
+    "155": {
+      "name": "火球鼠",
+      "key": "cyndaquil",
+      "types": [
+        "fire"
+      ],
+      "fr": "Héricendre"
+    },
+    "156": {
+      "name": "火岩鼠",
+      "key": "quilava",
+      "types": [
+        "fire"
+      ],
+      "fr": "Feurisson"
+    },
+    "157": {
+      "name": "火暴兽",
+      "key": "typhlosion",
+      "types": [
+        "fire"
+      ],
+      "fr": "Typhlosion"
+    },
+    "158": {
+      "name": "小锯鳄",
+      "key": "totodile",
+      "types": [
+        "water"
+      ],
+      "fr": "Kaiminus"
+    },
+    "159": {
+      "name": "蓝鳄",
+      "key": "croconaw",
+      "types": [
+        "water"
+      ],
+      "fr": "Crocrodil"
+    },
+    "160": {
+      "name": "大力鳄",
+      "key": "feraligatr",
+      "types": [
+        "water"
+      ],
+      "fr": "Aligatueur"
+    },
+    "161": {
+      "name": "尾立",
+      "key": "sentret",
+      "types": [
+        "normal"
+      ],
+      "fr": "Fouinette"
+    },
+    "162": {
+      "name": "大尾立",
+      "key": "furret",
+      "types": [
+        "normal"
+      ],
+      "fr": "Fouinar"
+    },
+    "163": {
+      "name": "咕咕",
+      "key": "hoothoot",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Hoothoot"
+    },
+    "164": {
+      "name": "猫头夜鹰",
+      "key": "noctowl",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Noarfang"
+    },
+    "165": {
+      "name": "芭瓢虫",
+      "key": "ledyba",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Coxy"
+    },
+    "166": {
+      "name": "安瓢虫",
+      "key": "ledian",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Coxyclaque"
+    },
+    "167": {
+      "name": "圆丝蛛",
+      "key": "spinarak",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Mimigal"
+    },
+    "168": {
+      "name": "阿利多斯",
+      "key": "ariados",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Migalos"
+    },
+    "169": {
+      "name": "叉字蝠",
+      "key": "crobat",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "fr": "Nostenfer"
+    },
+    "170": {
+      "name": "灯笼鱼",
+      "key": "chinchou",
+      "types": [
+        "water",
+        "electric"
+      ],
+      "fr": "Loupio"
+    },
+    "171": {
+      "name": "电灯怪",
+      "key": "lanturn",
+      "types": [
+        "water",
+        "electric"
+      ],
+      "fr": "Lanturn"
+    },
+    "172": {
+      "name": "皮丘",
+      "key": "pichu",
+      "types": [
+        "electric"
+      ],
+      "fr": "Pichu"
+    },
+    "173": {
+      "name": "皮宝宝",
+      "key": "cleffa",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Mélo"
+    },
+    "174": {
+      "name": "宝宝丁",
+      "key": "igglybuff",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "fr": "Toudoudou"
+    },
+    "175": {
+      "name": "波克比",
+      "key": "togepi",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Togepi"
+    },
+    "176": {
+      "name": "波克基古",
+      "key": "togetic",
+      "types": [
+        "fairy",
+        "flying"
+      ],
+      "fr": "Togetic"
+    },
+    "177": {
+      "name": "天然雀",
+      "key": "natu",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "fr": "Natu"
+    },
+    "178": {
+      "name": "天然鸟",
+      "key": "xatu",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "fr": "Xatu"
+    },
+    "179": {
+      "name": "咩利羊",
+      "key": "mareep",
+      "types": [
+        "electric"
+      ],
+      "fr": "Wattouat"
+    },
+    "180": {
+      "name": "茸茸羊",
+      "key": "flaaffy",
+      "types": [
+        "electric"
+      ],
+      "fr": "Lainergie"
+    },
+    "181": {
+      "name": "电龙",
+      "key": "ampharos",
+      "types": [
+        "electric"
+      ],
+      "fr": "Pharamp"
+    },
+    "182": {
+      "name": "美丽花",
+      "key": "bellossom",
+      "types": [
+        "grass"
+      ],
+      "fr": "Joliflor"
+    },
+    "183": {
+      "name": "玛力露",
+      "key": "marill",
+      "types": [
+        "water",
+        "fairy"
+      ],
+      "fr": "Marill"
+    },
+    "184": {
+      "name": "玛力露丽",
+      "key": "azumarill",
+      "types": [
+        "water",
+        "fairy"
+      ],
+      "fr": "Azumarill"
+    },
+    "185": {
+      "name": "树才怪",
+      "key": "sudowoodo",
+      "types": [
+        "rock"
+      ],
+      "fr": "Simularbre"
+    },
+    "186": {
+      "name": "蚊香蛙皇",
+      "key": "politoed",
+      "types": [
+        "water"
+      ],
+      "fr": "Tarpaud"
+    },
+    "187": {
+      "name": "毽子草",
+      "key": "hoppip",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "fr": "Granivol"
+    },
+    "188": {
+      "name": "毽子花",
+      "key": "skiploom",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "fr": "Floravol"
+    },
+    "189": {
+      "name": "毽子棉",
+      "key": "jumpluff",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "fr": "Cotovol"
+    },
+    "190": {
+      "name": "长尾怪手",
+      "key": "aipom",
+      "types": [
+        "normal"
+      ],
+      "fr": "Capumain"
+    },
+    "191": {
+      "name": "向日种子",
+      "key": "sunkern",
+      "types": [
+        "grass"
+      ],
+      "fr": "Tournegrin"
+    },
+    "192": {
+      "name": "向日花怪",
+      "key": "sunflora",
+      "types": [
+        "grass"
+      ],
+      "fr": "Héliatronc"
+    },
+    "193": {
+      "name": "蜻蜻蜓",
+      "key": "yanma",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Yanma"
+    },
+    "194": {
+      "name": "乌波",
+      "key": "wooper",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Axoloto"
+    },
+    "195": {
+      "name": "沼王",
+      "key": "quagsire",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Maraiste"
+    },
+    "196": {
+      "name": "太阳伊布",
+      "key": "espeon",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Mentali"
+    },
+    "197": {
+      "name": "月亮伊布",
+      "key": "umbreon",
+      "types": [
+        "dark"
+      ],
+      "fr": "Noctali"
+    },
+    "198": {
+      "name": "黑暗鸦",
+      "key": "murkrow",
+      "types": [
+        "dark",
+        "flying"
+      ],
+      "fr": "Cornèbre"
+    },
+    "199": {
+      "name": "呆呆王",
+      "key": "slowking",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "fr": "Roigada"
+    },
+    "200": {
+      "name": "梦妖",
+      "key": "misdreavus",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Feuforêve"
+    },
+    "201": {
+      "name": "未知图腾",
+      "key": "unown",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Zarbi"
+    },
+    "202": {
+      "name": "果然翁",
+      "key": "wobbuffet",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Qulbutoké"
+    },
+    "203": {
+      "name": "麒麟奇",
+      "key": "girafarig",
+      "types": [
+        "normal",
+        "psychic"
+      ],
+      "fr": "Girafarig"
+    },
+    "204": {
+      "name": "榛果球",
+      "key": "pineco",
+      "types": [
+        "bug"
+      ],
+      "fr": "Pomdepik"
+    },
+    "205": {
+      "name": "佛烈托斯",
+      "key": "forretress",
+      "types": [
+        "bug",
+        "steel"
+      ],
+      "fr": "Foretress"
+    },
+    "206": {
+      "name": "土龙弟弟",
+      "key": "dunsparce",
+      "types": [
+        "normal"
+      ],
+      "fr": "Insolourdo"
+    },
+    "207": {
+      "name": "天蝎",
+      "key": "gligar",
+      "types": [
+        "ground",
+        "flying"
+      ],
+      "fr": "Scorplane"
+    },
+    "208": {
+      "name": "大钢蛇",
+      "key": "steelix",
+      "types": [
+        "steel",
+        "ground"
+      ],
+      "fr": "Steelix"
+    },
+    "209": {
+      "name": "布鲁",
+      "key": "snubbull",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Snubbull"
+    },
+    "210": {
+      "name": "布鲁皇",
+      "key": "granbull",
+      "types": [
+        "fairy"
+      ],
+      "fr": "Granbull"
+    },
+    "211": {
+      "name": "千针鱼",
+      "key": "qwilfish",
+      "types": [
+        "water",
+        "poison"
+      ],
+      "fr": "Qwilfish"
+    },
+    "212": {
+      "name": "巨钳螳螂",
+      "key": "scizor",
+      "types": [
+        "bug",
+        "steel"
+      ],
+      "fr": "Cizayox"
+    },
+    "213": {
+      "name": "壶壶",
+      "key": "shuckle",
+      "types": [
+        "bug",
+        "rock"
+      ],
+      "fr": "Caratroc"
+    },
+    "214": {
+      "name": "赫拉克罗斯",
+      "key": "heracross",
+      "types": [
+        "bug",
+        "fighting"
+      ],
+      "fr": "Scarhino"
+    },
+    "215": {
+      "name": "狃拉",
+      "key": "sneasel",
+      "types": [
+        "dark",
+        "ice"
+      ],
+      "fr": "Farfuret"
+    },
+    "216": {
+      "name": "熊宝宝",
+      "key": "teddiursa",
+      "types": [
+        "normal"
+      ],
+      "fr": "Teddiursa"
+    },
+    "217": {
+      "name": "圈圈熊",
+      "key": "ursaring",
+      "types": [
+        "normal"
+      ],
+      "fr": "Ursaring"
+    },
+    "218": {
+      "name": "熔岩虫",
+      "key": "slugma",
+      "types": [
+        "fire"
+      ],
+      "fr": "Limagma"
+    },
+    "219": {
+      "name": "熔岩蜗牛",
+      "key": "magcargo",
+      "types": [
+        "fire",
+        "rock"
+      ],
+      "fr": "Volcaropod"
+    },
+    "220": {
+      "name": "小山猪",
+      "key": "swinub",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "fr": "Marcacrin"
+    },
+    "221": {
+      "name": "长毛猪",
+      "key": "piloswine",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "fr": "Cochignon"
+    },
+    "222": {
+      "name": "太阳珊瑚",
+      "key": "corsola",
+      "types": [
+        "water",
+        "rock"
+      ],
+      "fr": "Corayon"
+    },
+    "223": {
+      "name": "铁炮鱼",
+      "key": "remoraid",
+      "types": [
+        "water"
+      ],
+      "fr": "Rémoraid"
+    },
+    "224": {
+      "name": "章鱼桶",
+      "key": "octillery",
+      "types": [
+        "water"
+      ],
+      "fr": "Octillery"
+    },
+    "225": {
+      "name": "信使鸟",
+      "key": "delibird",
+      "types": [
+        "ice",
+        "flying"
+      ],
+      "fr": "Cadoizo"
+    },
+    "226": {
+      "name": "巨翅飞鱼",
+      "key": "mantine",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "fr": "Démanta"
+    },
+    "227": {
+      "name": "盔甲鸟",
+      "key": "skarmory",
+      "types": [
+        "steel",
+        "flying"
+      ],
+      "fr": "Airmure"
+    },
+    "228": {
+      "name": "戴鲁比",
+      "key": "houndour",
+      "types": [
+        "dark",
+        "fire"
+      ],
+      "fr": "Malosse"
+    },
+    "229": {
+      "name": "黑鲁加",
+      "key": "houndoom",
+      "types": [
+        "dark",
+        "fire"
+      ],
+      "fr": "Démolosse"
+    },
+    "230": {
+      "name": "刺龙王",
+      "key": "kingdra",
+      "types": [
+        "water",
+        "dragon"
+      ],
+      "fr": "Hyporoi"
+    },
+    "231": {
+      "name": "小小象",
+      "key": "phanpy",
+      "types": [
+        "ground"
+      ],
+      "fr": "Phanpy"
+    },
+    "232": {
+      "name": "顿甲",
+      "key": "donphan",
+      "types": [
+        "ground"
+      ],
+      "fr": "Donphan"
+    },
+    "233": {
+      "name": "多边兽２型",
+      "key": "porygon2",
+      "types": [
+        "normal"
+      ],
+      "fr": "Porygon2"
+    },
+    "234": {
+      "name": "惊角鹿",
+      "key": "stantler",
+      "types": [
+        "normal"
+      ],
+      "fr": "Cerfrousse"
+    },
+    "235": {
+      "name": "图图犬",
+      "key": "smeargle",
+      "types": [
+        "normal"
+      ],
+      "fr": "Queulorior"
+    },
+    "236": {
+      "name": "无畏小子",
+      "key": "tyrogue",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Debugant"
+    },
+    "237": {
+      "name": "战舞郎",
+      "key": "hitmontop",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Kapoera"
+    },
+    "238": {
+      "name": "迷唇娃",
+      "key": "smoochum",
+      "types": [
+        "ice",
+        "psychic"
+      ],
+      "fr": "Lippouti"
+    },
+    "239": {
+      "name": "电击怪",
+      "key": "elekid",
+      "types": [
+        "electric"
+      ],
+      "fr": "Élekid"
+    },
+    "240": {
+      "name": "鸭嘴宝宝",
+      "key": "magby",
+      "types": [
+        "fire"
+      ],
+      "fr": "Magby"
+    },
+    "241": {
+      "name": "大奶罐",
+      "key": "miltank",
+      "types": [
+        "normal"
+      ],
+      "fr": "Écrémeuh"
+    },
+    "242": {
+      "name": "幸福蛋",
+      "key": "blissey",
+      "types": [
+        "normal"
+      ],
+      "fr": "Leuphorie"
+    },
+    "243": {
+      "name": "雷公",
+      "key": "raikou",
+      "types": [
+        "electric"
+      ],
+      "fr": "Raikou"
+    },
+    "244": {
+      "name": "炎帝",
+      "key": "entei",
+      "types": [
+        "fire"
+      ],
+      "fr": "Entei"
+    },
+    "245": {
+      "name": "水君",
+      "key": "suicune",
+      "types": [
+        "water"
+      ],
+      "fr": "Suicune"
+    },
+    "246": {
+      "name": "幼基拉斯",
+      "key": "larvitar",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Embrylex"
+    },
+    "247": {
+      "name": "沙基拉斯",
+      "key": "pupitar",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "fr": "Ymphect"
+    },
+    "248": {
+      "name": "班基拉斯",
+      "key": "tyranitar",
+      "types": [
+        "rock",
+        "dark"
+      ],
+      "fr": "Tyranocif"
+    },
+    "249": {
+      "name": "洛奇亚",
+      "key": "lugia",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "fr": "Lugia"
+    },
+    "250": {
+      "name": "凤王",
+      "key": "ho-oh",
+      "types": [
+        "fire",
+        "flying"
+      ],
+      "fr": "Ho-Oh"
+    },
+    "251": {
+      "name": "时拉比",
+      "key": "celebi",
+      "types": [
+        "psychic",
+        "grass"
+      ],
+      "fr": "Celebi"
+    },
+    "252": {
+      "name": "木守宫",
+      "key": "treecko",
+      "types": [
+        "grass"
+      ],
+      "fr": "Arcko"
+    },
+    "253": {
+      "name": "森林蜥蜴",
+      "key": "grovyle",
+      "types": [
+        "grass"
+      ],
+      "fr": "Massko"
+    },
+    "254": {
+      "name": "蜥蜴王",
+      "key": "sceptile",
+      "types": [
+        "grass"
+      ],
+      "fr": "Jungko"
+    },
+    "255": {
+      "name": "火稚鸡",
+      "key": "torchic",
+      "types": [
+        "fire"
+      ],
+      "fr": "Poussifeu"
+    },
+    "256": {
+      "name": "力壮鸡",
+      "key": "combusken",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "fr": "Galifeu"
+    },
+    "257": {
+      "name": "火焰鸡",
+      "key": "blaziken",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "fr": "Braségali"
+    },
+    "258": {
+      "name": "水跃鱼",
+      "key": "mudkip",
+      "types": [
+        "water"
+      ],
+      "fr": "Gobou"
+    },
+    "259": {
+      "name": "沼跃鱼",
+      "key": "marshtomp",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Flobio"
+    },
+    "260": {
+      "name": "巨沼怪",
+      "key": "swampert",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Laggron"
+    },
+    "261": {
+      "name": "土狼犬",
+      "key": "poochyena",
+      "types": [
+        "dark"
+      ],
+      "fr": "Medhyèna"
+    },
+    "262": {
+      "name": "大狼犬",
+      "key": "mightyena",
+      "types": [
+        "dark"
+      ],
+      "fr": "Grahyèna"
+    },
+    "263": {
+      "name": "蛇纹熊",
+      "key": "zigzagoon",
+      "types": [
+        "normal"
+      ],
+      "fr": "Zigzaton"
+    },
+    "264": {
+      "name": "直冲熊",
+      "key": "linoone",
+      "types": [
+        "normal"
+      ],
+      "fr": "Linéon"
+    },
+    "265": {
+      "name": "刺尾虫",
+      "key": "wurmple",
+      "types": [
+        "bug"
+      ],
+      "fr": "Chenipotte"
+    },
+    "266": {
+      "name": "甲壳茧",
+      "key": "silcoon",
+      "types": [
+        "bug"
+      ],
+      "fr": "Armulys"
+    },
+    "267": {
+      "name": "狩猎凤蝶",
+      "key": "beautifly",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Charmillon"
+    },
+    "268": {
+      "name": "盾甲茧",
+      "key": "cascoon",
+      "types": [
+        "bug"
+      ],
+      "fr": "Blindalys"
+    },
+    "269": {
+      "name": "毒粉蛾",
+      "key": "dustox",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "fr": "Papinox"
+    },
+    "270": {
+      "name": "莲叶童子",
+      "key": "lotad",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "fr": "Nénupiot"
+    },
+    "271": {
+      "name": "莲帽小童",
+      "key": "lombre",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "fr": "Lombre"
+    },
+    "272": {
+      "name": "乐天河童",
+      "key": "ludicolo",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "fr": "Ludicolo"
+    },
+    "273": {
+      "name": "橡实果",
+      "key": "seedot",
+      "types": [
+        "grass"
+      ],
+      "fr": "Grainipiot"
+    },
+    "274": {
+      "name": "长鼻叶",
+      "key": "nuzleaf",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "fr": "Pifeuil"
+    },
+    "275": {
+      "name": "狡猾天狗",
+      "key": "shiftry",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "fr": "Tengalice"
+    },
+    "276": {
+      "name": "傲骨燕",
+      "key": "taillow",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Nirondelle"
+    },
+    "277": {
+      "name": "大王燕",
+      "key": "swellow",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Hélédelle"
+    },
+    "278": {
+      "name": "长翅鸥",
+      "key": "wingull",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "fr": "Goélise"
+    },
+    "279": {
+      "name": "大嘴鸥",
+      "key": "pelipper",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "fr": "Bekipan"
+    },
+    "280": {
+      "name": "拉鲁拉丝",
+      "key": "ralts",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "fr": "Tarsal"
+    },
+    "281": {
+      "name": "奇鲁莉安",
+      "key": "kirlia",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "fr": "Kirlia"
+    },
+    "282": {
+      "name": "沙奈朵",
+      "key": "gardevoir",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "fr": "Gardevoir"
+    },
+    "283": {
+      "name": "溜溜糖球",
+      "key": "surskit",
+      "types": [
+        "bug",
+        "water"
+      ],
+      "fr": "Arakdo"
+    },
+    "284": {
+      "name": "雨翅蛾",
+      "key": "masquerain",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Maskadra"
+    },
+    "285": {
+      "name": "蘑蘑菇",
+      "key": "shroomish",
+      "types": [
+        "grass"
+      ],
+      "fr": "Balignon"
+    },
+    "286": {
+      "name": "斗笠菇",
+      "key": "breloom",
+      "types": [
+        "grass",
+        "fighting"
+      ],
+      "fr": "Chapignon"
+    },
+    "287": {
+      "name": "懒人獭",
+      "key": "slakoth",
+      "types": [
+        "normal"
+      ],
+      "fr": "Parecool"
+    },
+    "288": {
+      "name": "过动猿",
+      "key": "vigoroth",
+      "types": [
+        "normal"
+      ],
+      "fr": "Vigoroth"
+    },
+    "289": {
+      "name": "请假王",
+      "key": "slaking",
+      "types": [
+        "normal"
+      ],
+      "fr": "Monaflèmit"
+    },
+    "290": {
+      "name": "土居忍士",
+      "key": "nincada",
+      "types": [
+        "bug",
+        "ground"
+      ],
+      "fr": "Ningale"
+    },
+    "291": {
+      "name": "铁面忍者",
+      "key": "ninjask",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Ninjask"
+    },
+    "292": {
+      "name": "脱壳忍者",
+      "key": "shedinja",
+      "types": [
+        "bug",
+        "ghost"
+      ],
+      "fr": "Munja"
+    },
+    "293": {
+      "name": "咕妞妞",
+      "key": "whismur",
+      "types": [
+        "normal"
+      ],
+      "fr": "Chuchmur"
+    },
+    "294": {
+      "name": "吼爆弹",
+      "key": "loudred",
+      "types": [
+        "normal"
+      ],
+      "fr": "Ramboum"
+    },
+    "295": {
+      "name": "爆音怪",
+      "key": "exploud",
+      "types": [
+        "normal"
+      ],
+      "fr": "Brouhabam"
+    },
+    "296": {
+      "name": "幕下力士",
+      "key": "makuhita",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Makuhita"
+    },
+    "297": {
+      "name": "铁掌力士",
+      "key": "hariyama",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Hariyama"
+    },
+    "298": {
+      "name": "露力丽",
+      "key": "azurill",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "fr": "Azurill"
+    },
+    "299": {
+      "name": "朝北鼻",
+      "key": "nosepass",
+      "types": [
+        "rock"
+      ],
+      "fr": "Tarinor"
+    },
+    "300": {
+      "name": "向尾喵",
+      "key": "skitty",
+      "types": [
+        "normal"
+      ],
+      "fr": "Skitty"
+    },
+    "301": {
+      "name": "优雅猫",
+      "key": "delcatty",
+      "types": [
+        "normal"
+      ],
+      "fr": "Delcatty"
+    },
+    "302": {
+      "name": "勾魂眼",
+      "key": "sableye",
+      "types": [
+        "dark",
+        "ghost"
+      ],
+      "fr": "Ténéfix"
+    },
+    "303": {
+      "name": "大嘴娃",
+      "key": "mawile",
+      "types": [
+        "steel",
+        "fairy"
+      ],
+      "fr": "Mysdibule"
+    },
+    "304": {
+      "name": "可可多拉",
+      "key": "aron",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "fr": "Galekid"
+    },
+    "305": {
+      "name": "可多拉",
+      "key": "lairon",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "fr": "Galegon"
+    },
+    "306": {
+      "name": "波士可多拉",
+      "key": "aggron",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "fr": "Galeking"
+    },
+    "307": {
+      "name": "玛沙那",
+      "key": "meditite",
+      "types": [
+        "fighting",
+        "psychic"
+      ],
+      "fr": "Méditikka"
+    },
+    "308": {
+      "name": "恰雷姆",
+      "key": "medicham",
+      "types": [
+        "fighting",
+        "psychic"
+      ],
+      "fr": "Charmina"
+    },
+    "309": {
+      "name": "落雷兽",
+      "key": "electrike",
+      "types": [
+        "electric"
+      ],
+      "fr": "Dynavolt"
+    },
+    "310": {
+      "name": "雷电兽",
+      "key": "manectric",
+      "types": [
+        "electric"
+      ],
+      "fr": "Élecsprint"
+    },
+    "311": {
+      "name": "正电拍拍",
+      "key": "plusle",
+      "types": [
+        "electric"
+      ],
+      "fr": "Posipi"
+    },
+    "312": {
+      "name": "負电拍拍",
+      "key": "minun",
+      "types": [
+        "electric"
+      ],
+      "fr": "Négapi"
+    },
+    "313": {
+      "name": "电萤虫",
+      "key": "volbeat",
+      "types": [
+        "bug"
+      ],
+      "fr": "Muciole"
+    },
+    "314": {
+      "name": "甜甜萤",
+      "key": "illumise",
+      "types": [
+        "bug"
+      ],
+      "fr": "Lumivole"
+    },
+    "315": {
+      "name": "毒蔷薇",
+      "key": "roselia",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Rosélia"
+    },
+    "316": {
+      "name": "溶食兽",
+      "key": "gulpin",
+      "types": [
+        "poison"
+      ],
+      "fr": "Gloupti"
+    },
+    "317": {
+      "name": "吞食兽",
+      "key": "swalot",
+      "types": [
+        "poison"
+      ],
+      "fr": "Avaltout"
+    },
+    "318": {
+      "name": "利牙鱼",
+      "key": "carvanha",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "fr": "Carvanha"
+    },
+    "319": {
+      "name": "巨牙鲨",
+      "key": "sharpedo",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "fr": "Sharpedo"
+    },
+    "320": {
+      "name": "吼吼鲸",
+      "key": "wailmer",
+      "types": [
+        "water"
+      ],
+      "fr": "Wailmer"
+    },
+    "321": {
+      "name": "吼鲸王",
+      "key": "wailord",
+      "types": [
+        "water"
+      ],
+      "fr": "Wailord"
+    },
+    "322": {
+      "name": "呆火驼",
+      "key": "numel",
+      "types": [
+        "fire",
+        "ground"
+      ],
+      "fr": "Chamallot"
+    },
+    "323": {
+      "name": "喷火驼",
+      "key": "camerupt",
+      "types": [
+        "fire",
+        "ground"
+      ],
+      "fr": "Camérupt"
+    },
+    "324": {
+      "name": "煤炭龟",
+      "key": "torkoal",
+      "types": [
+        "fire"
+      ],
+      "fr": "Chartor"
+    },
+    "325": {
+      "name": "跳跳猪",
+      "key": "spoink",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Spoink"
+    },
+    "326": {
+      "name": "噗噗猪",
+      "key": "grumpig",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Groret"
+    },
+    "327": {
+      "name": "晃晃斑",
+      "key": "spinda",
+      "types": [
+        "normal"
+      ],
+      "fr": "Spinda"
+    },
+    "328": {
+      "name": "大颚蚁",
+      "key": "trapinch",
+      "types": [
+        "ground"
+      ],
+      "fr": "Kraknoix"
+    },
+    "329": {
+      "name": "超音波幼虫",
+      "key": "vibrava",
+      "types": [
+        "ground",
+        "dragon"
+      ],
+      "fr": "Vibraninf"
+    },
+    "330": {
+      "name": "沙漠蜻蜓",
+      "key": "flygon",
+      "types": [
+        "ground",
+        "dragon"
+      ],
+      "fr": "Libégon"
+    },
+    "331": {
+      "name": "刺球仙人掌",
+      "key": "cacnea",
+      "types": [
+        "grass"
+      ],
+      "fr": "Cacnea"
+    },
+    "332": {
+      "name": "梦歌仙人掌",
+      "key": "cacturne",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "fr": "Cacturne"
+    },
+    "333": {
+      "name": "青绵鸟",
+      "key": "swablu",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Tylton"
+    },
+    "334": {
+      "name": "七夕青鸟",
+      "key": "altaria",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "fr": "Altaria"
+    },
+    "335": {
+      "name": "猫鼬斩",
+      "key": "zangoose",
+      "types": [
+        "normal"
+      ],
+      "fr": "Mangriff"
+    },
+    "336": {
+      "name": "饭匙蛇",
+      "key": "seviper",
+      "types": [
+        "poison"
+      ],
+      "fr": "Séviper"
+    },
+    "337": {
+      "name": "月石",
+      "key": "lunatone",
+      "types": [
+        "rock",
+        "psychic"
+      ],
+      "fr": "Séléroc"
+    },
+    "338": {
+      "name": "太阳岩",
+      "key": "solrock",
+      "types": [
+        "rock",
+        "psychic"
+      ],
+      "fr": "Solaroc"
+    },
+    "339": {
+      "name": "泥泥鳅",
+      "key": "barboach",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Barloche"
+    },
+    "340": {
+      "name": "鲶鱼王",
+      "key": "whiscash",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Barbicha"
+    },
+    "341": {
+      "name": "龙虾小兵",
+      "key": "corphish",
+      "types": [
+        "water"
+      ],
+      "fr": "Écrapince"
+    },
+    "342": {
+      "name": "铁螯龙虾",
+      "key": "crawdaunt",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "fr": "Colhomard"
+    },
+    "343": {
+      "name": "天秤偶",
+      "key": "baltoy",
+      "types": [
+        "ground",
+        "psychic"
+      ],
+      "fr": "Balbuto"
+    },
+    "344": {
+      "name": "念力土偶",
+      "key": "claydol",
+      "types": [
+        "ground",
+        "psychic"
+      ],
+      "fr": "Kaorine"
+    },
+    "345": {
+      "name": "触手百合",
+      "key": "lileep",
+      "types": [
+        "rock",
+        "grass"
+      ],
+      "fr": "Lilia"
+    },
+    "346": {
+      "name": "摇篮百合",
+      "key": "cradily",
+      "types": [
+        "rock",
+        "grass"
+      ],
+      "fr": "Vacilys"
+    },
+    "347": {
+      "name": "太古羽虫",
+      "key": "anorith",
+      "types": [
+        "rock",
+        "bug"
+      ],
+      "fr": "Anorith"
+    },
+    "348": {
+      "name": "太古盔甲",
+      "key": "armaldo",
+      "types": [
+        "rock",
+        "bug"
+      ],
+      "fr": "Armaldo"
+    },
+    "349": {
+      "name": "丑丑鱼",
+      "key": "feebas",
+      "types": [
+        "water"
+      ],
+      "fr": "Barpau"
+    },
+    "350": {
+      "name": "美纳斯",
+      "key": "milotic",
+      "types": [
+        "water"
+      ],
+      "fr": "Milobellus"
+    },
+    "351": {
+      "name": "飘浮泡泡",
+      "key": "castform",
+      "types": [
+        "normal"
+      ],
+      "fr": "Morphéo"
+    },
+    "352": {
+      "name": "变隐龙",
+      "key": "kecleon",
+      "types": [
+        "normal"
+      ],
+      "fr": "Kecleon"
+    },
+    "353": {
+      "name": "怨影娃娃",
+      "key": "shuppet",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Polichombr"
+    },
+    "354": {
+      "name": "诅咒娃娃",
+      "key": "banette",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Branette"
+    },
+    "355": {
+      "name": "夜巡灵",
+      "key": "duskull",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Skelénox"
+    },
+    "356": {
+      "name": "彷徨夜灵",
+      "key": "dusclops",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Téraclope"
+    },
+    "357": {
+      "name": "热带龙",
+      "key": "tropius",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "fr": "Tropius"
+    },
+    "358": {
+      "name": "风铃铃",
+      "key": "chimecho",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Éoko"
+    },
+    "359": {
+      "name": "阿勃梭鲁",
+      "key": "absol",
+      "types": [
+        "dark"
+      ],
+      "fr": "Absol"
+    },
+    "360": {
+      "name": "小果然",
+      "key": "wynaut",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Okéoké"
+    },
+    "361": {
+      "name": "雪童子",
+      "key": "snorunt",
+      "types": [
+        "ice"
+      ],
+      "fr": "Stalgamin"
+    },
+    "362": {
+      "name": "冰鬼护",
+      "key": "glalie",
+      "types": [
+        "ice"
+      ],
+      "fr": "Oniglali"
+    },
+    "363": {
+      "name": "海豹球",
+      "key": "spheal",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "fr": "Obalie"
+    },
+    "364": {
+      "name": "海魔狮",
+      "key": "sealeo",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "fr": "Phogleur"
+    },
+    "365": {
+      "name": "帝牙海狮",
+      "key": "walrein",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "fr": "Kaimorse"
+    },
+    "366": {
+      "name": "珍珠贝",
+      "key": "clamperl",
+      "types": [
+        "water"
+      ],
+      "fr": "Coquiperl"
+    },
+    "367": {
+      "name": "猎斑鱼",
+      "key": "huntail",
+      "types": [
+        "water"
+      ],
+      "fr": "Serpang"
+    },
+    "368": {
+      "name": "樱花鱼",
+      "key": "gorebyss",
+      "types": [
+        "water"
+      ],
+      "fr": "Rosabyss"
+    },
+    "369": {
+      "name": "古空棘鱼",
+      "key": "relicanth",
+      "types": [
+        "water",
+        "rock"
+      ],
+      "fr": "Relicanth"
+    },
+    "370": {
+      "name": "爱心鱼",
+      "key": "luvdisc",
+      "types": [
+        "water"
+      ],
+      "fr": "Lovdisc"
+    },
+    "371": {
+      "name": "宝贝龙",
+      "key": "bagon",
+      "types": [
+        "dragon"
+      ],
+      "fr": "Draby"
+    },
+    "372": {
+      "name": "甲壳龙",
+      "key": "shelgon",
+      "types": [
+        "dragon"
+      ],
+      "fr": "Drackhaus"
+    },
+    "373": {
+      "name": "暴飞龙",
+      "key": "salamence",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "fr": "Drattak"
+    },
+    "374": {
+      "name": "铁哑铃",
+      "key": "beldum",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Terhal"
+    },
+    "375": {
+      "name": "金属怪",
+      "key": "metang",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Métang"
+    },
+    "376": {
+      "name": "巨金怪",
+      "key": "metagross",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Métalosse"
+    },
+    "377": {
+      "name": "雷吉洛克",
+      "key": "regirock",
+      "types": [
+        "rock"
+      ],
+      "fr": "Regirock"
+    },
+    "378": {
+      "name": "雷吉艾斯",
+      "key": "regice",
+      "types": [
+        "ice"
+      ],
+      "fr": "Regice"
+    },
+    "379": {
+      "name": "雷吉斯奇鲁",
+      "key": "registeel",
+      "types": [
+        "steel"
+      ],
+      "fr": "Registeel"
+    },
+    "380": {
+      "name": "拉帝亚斯",
+      "key": "latias",
+      "types": [
+        "dragon",
+        "psychic"
+      ],
+      "fr": "Latias"
+    },
+    "381": {
+      "name": "拉帝欧斯",
+      "key": "latios",
+      "types": [
+        "dragon",
+        "psychic"
+      ],
+      "fr": "Latios"
+    },
+    "382": {
+      "name": "盖欧卡",
+      "key": "kyogre",
+      "types": [
+        "water"
+      ],
+      "fr": "Kyogre"
+    },
+    "383": {
+      "name": "固拉多",
+      "key": "groudon",
+      "types": [
+        "ground"
+      ],
+      "fr": "Groudon"
+    },
+    "384": {
+      "name": "烈空坐",
+      "key": "rayquaza",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "fr": "Rayquaza"
+    },
+    "385": {
+      "name": "基拉祈",
+      "key": "jirachi",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Jirachi"
+    },
+    "386": {
+      "name": "代欧奇希斯",
+      "key": "deoxys-normal",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Deoxys"
+    },
+    "387": {
+      "name": "草苗龟",
+      "key": "turtwig",
+      "types": [
+        "grass"
+      ],
+      "fr": "Tortipouss"
+    },
+    "388": {
+      "name": "树林龟",
+      "key": "grotle",
+      "types": [
+        "grass"
+      ],
+      "fr": "Boskara"
+    },
+    "389": {
+      "name": "土台龟",
+      "key": "torterra",
+      "types": [
+        "grass",
+        "ground"
+      ],
+      "fr": "Torterra"
+    },
+    "390": {
+      "name": "小火焰猴",
+      "key": "chimchar",
+      "types": [
+        "fire"
+      ],
+      "fr": "Ouisticram"
+    },
+    "391": {
+      "name": "猛火猴",
+      "key": "monferno",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "fr": "Chimpenfeu"
+    },
+    "392": {
+      "name": "烈焰猴",
+      "key": "infernape",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "fr": "Simiabraz"
+    },
+    "393": {
+      "name": "波加曼",
+      "key": "piplup",
+      "types": [
+        "water"
+      ],
+      "fr": "Tiplouf"
+    },
+    "394": {
+      "name": "波皇子",
+      "key": "prinplup",
+      "types": [
+        "water"
+      ],
+      "fr": "Prinplouf"
+    },
+    "395": {
+      "name": "帝王拿波",
+      "key": "empoleon",
+      "types": [
+        "water",
+        "steel"
+      ],
+      "fr": "Pingoléon"
+    },
+    "396": {
+      "name": "姆克儿",
+      "key": "starly",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Étourmi"
+    },
+    "397": {
+      "name": "姆克鸟",
+      "key": "staravia",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Étourvol"
+    },
+    "398": {
+      "name": "姆克鹰",
+      "key": "staraptor",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Étouraptor"
+    },
+    "399": {
+      "name": "大牙狸",
+      "key": "bidoof",
+      "types": [
+        "normal"
+      ],
+      "fr": "Keunotor"
+    },
+    "400": {
+      "name": "大尾狸",
+      "key": "bibarel",
+      "types": [
+        "normal",
+        "water"
+      ],
+      "fr": "Castorno"
+    },
+    "401": {
+      "name": "圆法师",
+      "key": "kricketot",
+      "types": [
+        "bug"
+      ],
+      "fr": "Crikzik"
+    },
+    "402": {
+      "name": "音箱蟀",
+      "key": "kricketune",
+      "types": [
+        "bug"
+      ],
+      "fr": "Mélokrik"
+    },
+    "403": {
+      "name": "小猫怪",
+      "key": "shinx",
+      "types": [
+        "electric"
+      ],
+      "fr": "Lixy"
+    },
+    "404": {
+      "name": "勒克猫",
+      "key": "luxio",
+      "types": [
+        "electric"
+      ],
+      "fr": "Luxio"
+    },
+    "405": {
+      "name": "伦琴猫",
+      "key": "luxray",
+      "types": [
+        "electric"
+      ],
+      "fr": "Luxray"
+    },
+    "406": {
+      "name": "含羞苞",
+      "key": "budew",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Rozbouton"
+    },
+    "407": {
+      "name": "罗丝雷朵",
+      "key": "roserade",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "fr": "Roserade"
+    },
+    "408": {
+      "name": "头盖龙",
+      "key": "cranidos",
+      "types": [
+        "rock"
+      ],
+      "fr": "Kranidos"
+    },
+    "409": {
+      "name": "战槌龙",
+      "key": "rampardos",
+      "types": [
+        "rock"
+      ],
+      "fr": "Charkos"
+    },
+    "410": {
+      "name": "盾甲龙",
+      "key": "shieldon",
+      "types": [
+        "rock",
+        "steel"
+      ],
+      "fr": "Dinoclier"
+    },
+    "411": {
+      "name": "护城龙",
+      "key": "bastiodon",
+      "types": [
+        "rock",
+        "steel"
+      ],
+      "fr": "Bastiodon"
+    },
+    "412": {
+      "name": "结草儿",
+      "key": "burmy",
+      "types": [
+        "bug"
+      ],
+      "fr": "Cheniti"
+    },
+    "413": {
+      "name": "结草贵妇",
+      "key": "wormadam-plant",
+      "types": [
+        "bug",
+        "grass"
+      ],
+      "fr": "Cheniselle"
+    },
+    "414": {
+      "name": "绅士蛾",
+      "key": "mothim",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Papilord"
+    },
+    "415": {
+      "name": "三蜜蜂",
+      "key": "combee",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Apitrini"
+    },
+    "416": {
+      "name": "蜂女王",
+      "key": "vespiquen",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Apireine"
+    },
+    "417": {
+      "name": "帕奇利兹",
+      "key": "pachirisu",
+      "types": [
+        "electric"
+      ],
+      "fr": "Pachirisu"
+    },
+    "418": {
+      "name": "泳圈鼬",
+      "key": "buizel",
+      "types": [
+        "water"
+      ],
+      "fr": "Mustébouée"
+    },
+    "419": {
+      "name": "浮潜鼬",
+      "key": "floatzel",
+      "types": [
+        "water"
+      ],
+      "fr": "Mustéflott"
+    },
+    "420": {
+      "name": "樱花宝",
+      "key": "cherubi",
+      "types": [
+        "grass"
+      ],
+      "fr": "Ceribou"
+    },
+    "421": {
+      "name": "樱花儿",
+      "key": "cherrim",
+      "types": [
+        "grass"
+      ],
+      "fr": "Ceriflor"
+    },
+    "422": {
+      "name": "无壳海兔",
+      "key": "shellos",
+      "types": [
+        "water"
+      ],
+      "fr": "Sancoki"
+    },
+    "423": {
+      "name": "海兔兽",
+      "key": "gastrodon",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "fr": "Tritosor"
+    },
+    "424": {
+      "name": "双尾怪手",
+      "key": "ambipom",
+      "types": [
+        "normal"
+      ],
+      "fr": "Capidextre"
+    },
+    "425": {
+      "name": "飘飘球",
+      "key": "drifloon",
+      "types": [
+        "ghost",
+        "flying"
+      ],
+      "fr": "Baudrive"
+    },
+    "426": {
+      "name": "随风球",
+      "key": "drifblim",
+      "types": [
+        "ghost",
+        "flying"
+      ],
+      "fr": "Grodrive"
+    },
+    "427": {
+      "name": "卷卷耳",
+      "key": "buneary",
+      "types": [
+        "normal"
+      ],
+      "fr": "Laporeille"
+    },
+    "428": {
+      "name": "长耳兔",
+      "key": "lopunny",
+      "types": [
+        "normal"
+      ],
+      "fr": "Lockpin"
+    },
+    "429": {
+      "name": "梦妖魔",
+      "key": "mismagius",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Magirêve"
+    },
+    "430": {
+      "name": "乌鸦头头",
+      "key": "honchkrow",
+      "types": [
+        "dark",
+        "flying"
+      ],
+      "fr": "Corboss"
+    },
+    "431": {
+      "name": "魅力喵",
+      "key": "glameow",
+      "types": [
+        "normal"
+      ],
+      "fr": "Chaglam"
+    },
+    "432": {
+      "name": "东施喵",
+      "key": "purugly",
+      "types": [
+        "normal"
+      ],
+      "fr": "Chaffreux"
+    },
+    "433": {
+      "name": "铃铛响",
+      "key": "chingling",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Korillon"
+    },
+    "434": {
+      "name": "臭鼬噗",
+      "key": "stunky",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "fr": "Moufouette"
+    },
+    "435": {
+      "name": "坦克臭鼬",
+      "key": "skuntank",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "fr": "Moufflair"
+    },
+    "436": {
+      "name": "铜镜怪",
+      "key": "bronzor",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Archéomire"
+    },
+    "437": {
+      "name": "青铜钟",
+      "key": "bronzong",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "fr": "Archéodong"
+    },
+    "438": {
+      "name": "盆才怪",
+      "key": "bonsly",
+      "types": [
+        "rock"
+      ],
+      "fr": "Manzaï"
+    },
+    "439": {
+      "name": "魔尼尼",
+      "key": "mime-jr",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "fr": "Mime Jr."
+    },
+    "440": {
+      "name": "小福蛋",
+      "key": "happiny",
+      "types": [
+        "normal"
+      ],
+      "fr": "Ptiravi"
+    },
+    "441": {
+      "name": "聒噪鸟",
+      "key": "chatot",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "fr": "Pijako"
+    },
+    "442": {
+      "name": "花岩怪",
+      "key": "spiritomb",
+      "types": [
+        "ghost",
+        "dark"
+      ],
+      "fr": "Spiritomb"
+    },
+    "443": {
+      "name": "圆陆鲨",
+      "key": "gible",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "fr": "Griknot"
+    },
+    "444": {
+      "name": "尖牙陆鲨",
+      "key": "gabite",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "fr": "Carmache"
+    },
+    "445": {
+      "name": "烈咬陆鲨",
+      "key": "garchomp",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "fr": "Carchacrok"
+    },
+    "446": {
+      "name": "小卡比兽",
+      "key": "munchlax",
+      "types": [
+        "normal"
+      ],
+      "fr": "Goinfrex"
+    },
+    "447": {
+      "name": "利欧路",
+      "key": "riolu",
+      "types": [
+        "fighting"
+      ],
+      "fr": "Riolu"
+    },
+    "448": {
+      "name": "路卡利欧",
+      "key": "lucario",
+      "types": [
+        "fighting",
+        "steel"
+      ],
+      "fr": "Lucario"
+    },
+    "449": {
+      "name": "沙河马",
+      "key": "hippopotas",
+      "types": [
+        "ground"
+      ],
+      "fr": "Hippopotas"
+    },
+    "450": {
+      "name": "河马兽",
+      "key": "hippowdon",
+      "types": [
+        "ground"
+      ],
+      "fr": "Hippodocus"
+    },
+    "451": {
+      "name": "钳尾蝎",
+      "key": "skorupi",
+      "types": [
+        "poison",
+        "bug"
+      ],
+      "fr": "Rapion"
+    },
+    "452": {
+      "name": "龙王蝎",
+      "key": "drapion",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "fr": "Drascore"
+    },
+    "453": {
+      "name": "不良蛙",
+      "key": "croagunk",
+      "types": [
+        "poison",
+        "fighting"
+      ],
+      "fr": "Cradopaud"
+    },
+    "454": {
+      "name": "毒骷蛙",
+      "key": "toxicroak",
+      "types": [
+        "poison",
+        "fighting"
+      ],
+      "fr": "Coatox"
+    },
+    "455": {
+      "name": "尖牙笼",
+      "key": "carnivine",
+      "types": [
+        "grass"
+      ],
+      "fr": "Vortente"
+    },
+    "456": {
+      "name": "荧光鱼",
+      "key": "finneon",
+      "types": [
+        "water"
+      ],
+      "fr": "Écayon"
+    },
+    "457": {
+      "name": "霓虹鱼",
+      "key": "lumineon",
+      "types": [
+        "water"
+      ],
+      "fr": "Luminéon"
+    },
+    "458": {
+      "name": "小球飞鱼",
+      "key": "mantyke",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "fr": "Babimanta"
+    },
+    "459": {
+      "name": "雪笠怪",
+      "key": "snover",
+      "types": [
+        "grass",
+        "ice"
+      ],
+      "fr": "Blizzi"
+    },
+    "460": {
+      "name": "暴雪王",
+      "key": "abomasnow",
+      "types": [
+        "grass",
+        "ice"
+      ],
+      "fr": "Blizzaroi"
+    },
+    "461": {
+      "name": "玛狃拉",
+      "key": "weavile",
+      "types": [
+        "dark",
+        "ice"
+      ],
+      "fr": "Dimoret"
+    },
+    "462": {
+      "name": "自爆磁怪",
+      "key": "magnezone",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "fr": "Magnézone"
+    },
+    "463": {
+      "name": "大舌舔",
+      "key": "lickilicky",
+      "types": [
+        "normal"
+      ],
+      "fr": "Coudlangue"
+    },
+    "464": {
+      "name": "超甲狂犀",
+      "key": "rhyperior",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "fr": "Rhinastoc"
+    },
+    "465": {
+      "name": "巨蔓藤",
+      "key": "tangrowth",
+      "types": [
+        "grass"
+      ],
+      "fr": "Bouldeneu"
+    },
+    "466": {
+      "name": "电击魔兽",
+      "key": "electivire",
+      "types": [
+        "electric"
+      ],
+      "fr": "Élekable"
+    },
+    "467": {
+      "name": "鸭嘴炎兽",
+      "key": "magmortar",
+      "types": [
+        "fire"
+      ],
+      "fr": "Maganon"
+    },
+    "468": {
+      "name": "波克基斯",
+      "key": "togekiss",
+      "types": [
+        "fairy",
+        "flying"
+      ],
+      "fr": "Togekiss"
+    },
+    "469": {
+      "name": "远古巨蜓",
+      "key": "yanmega",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "fr": "Yanmega"
+    },
+    "470": {
+      "name": "叶伊布",
+      "key": "leafeon",
+      "types": [
+        "grass"
+      ],
+      "fr": "Phyllali"
+    },
+    "471": {
+      "name": "冰伊布",
+      "key": "glaceon",
+      "types": [
+        "ice"
+      ],
+      "fr": "Givrali"
+    },
+    "472": {
+      "name": "天蝎王",
+      "key": "gliscor",
+      "types": [
+        "ground",
+        "flying"
+      ],
+      "fr": "Scorvol"
+    },
+    "473": {
+      "name": "象牙猪",
+      "key": "mamoswine",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "fr": "Mammochon"
+    },
+    "474": {
+      "name": "多边兽乙型",
+      "key": "porygon-z",
+      "types": [
+        "normal"
+      ],
+      "fr": "Porygon-Z"
+    },
+    "475": {
+      "name": "艾路雷朵",
+      "key": "gallade",
+      "types": [
+        "psychic",
+        "fighting"
+      ],
+      "fr": "Gallame"
+    },
+    "476": {
+      "name": "大朝北鼻",
+      "key": "probopass",
+      "types": [
+        "rock",
+        "steel"
+      ],
+      "fr": "Tarinorme"
+    },
+    "477": {
+      "name": "黑夜魔灵",
+      "key": "dusknoir",
+      "types": [
+        "ghost"
+      ],
+      "fr": "Noctunoir"
+    },
+    "478": {
+      "name": "雪妖女",
+      "key": "froslass",
+      "types": [
+        "ice",
+        "ghost"
+      ],
+      "fr": "Momartik"
+    },
+    "479": {
+      "name": "洛托姆",
+      "key": "rotom",
+      "types": [
+        "electric",
+        "ghost"
+      ],
+      "fr": "Motisma"
+    },
+    "480": {
+      "name": "由克希",
+      "key": "uxie",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Créhelf"
+    },
+    "481": {
+      "name": "艾姆利多",
+      "key": "mesprit",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Créfollet"
+    },
+    "482": {
+      "name": "亚克诺姆",
+      "key": "azelf",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Créfadet"
+    },
+    "483": {
+      "name": "帝牙卢卡",
+      "key": "dialga",
+      "types": [
+        "steel",
+        "dragon"
+      ],
+      "fr": "Dialga"
+    },
+    "484": {
+      "name": "帕路奇亚",
+      "key": "palkia",
+      "types": [
+        "water",
+        "dragon"
+      ],
+      "fr": "Palkia"
+    },
+    "485": {
+      "name": "席多蓝恩",
+      "key": "heatran",
+      "types": [
+        "fire",
+        "steel"
+      ],
+      "fr": "Heatran"
+    },
+    "486": {
+      "name": "雷吉奇卡斯",
+      "key": "regigigas",
+      "types": [
+        "normal"
+      ],
+      "fr": "Regigigas"
+    },
+    "487": {
+      "name": "骑拉帝纳",
+      "key": "giratina-altered",
+      "types": [
+        "ghost",
+        "dragon"
+      ],
+      "fr": "Giratina"
+    },
+    "488": {
+      "name": "克雷色利亚",
+      "key": "cresselia",
+      "types": [
+        "psychic"
+      ],
+      "fr": "Cresselia"
+    },
+    "489": {
+      "name": "霏欧纳",
+      "key": "phione",
+      "types": [
+        "water"
+      ],
+      "fr": "Phione"
+    },
+    "490": {
+      "name": "玛纳霏",
+      "key": "manaphy",
+      "types": [
+        "water"
+      ],
+      "fr": "Manaphy"
+    },
+    "491": {
+      "name": "达克莱伊",
+      "key": "darkrai",
+      "types": [
+        "dark"
+      ],
+      "fr": "Darkrai"
+    },
+    "492": {
+      "name": "谢米",
+      "key": "shaymin-land",
+      "types": [
+        "grass"
+      ],
+      "fr": "Shaymin"
+    },
+    "493": {
+      "name": "阿尔宙斯",
+      "key": "arceus",
+      "types": [
+        "normal"
+      ],
+      "fr": "Arceus"
+    }
+  },
+  "chart": {
+    "normal": {
+      "rock": 0.5,
+      "ghost": 0,
+      "steel": 0.5
+    },
+    "fire": {
+      "fire": 0.5,
+      "water": 0.5,
+      "grass": 2,
+      "ice": 2,
+      "bug": 2,
+      "rock": 0.5,
+      "dragon": 0.5,
+      "steel": 2
+    },
+    "water": {
+      "fire": 2,
+      "water": 0.5,
+      "grass": 0.5,
+      "ground": 2,
+      "rock": 2,
+      "dragon": 0.5
+    },
+    "electric": {
+      "water": 2,
+      "electric": 0.5,
+      "grass": 0.5,
+      "ground": 0,
+      "flying": 2,
+      "dragon": 0.5
+    },
+    "grass": {
+      "fire": 0.5,
+      "water": 2,
+      "grass": 0.5,
+      "poison": 0.5,
+      "ground": 2,
+      "flying": 0.5,
+      "bug": 0.5,
+      "rock": 2,
+      "dragon": 0.5,
+      "steel": 0.5
+    },
+    "ice": {
+      "fire": 0.5,
+      "water": 0.5,
+      "grass": 2,
+      "ice": 0.5,
+      "ground": 2,
+      "flying": 2,
+      "dragon": 2,
+      "steel": 0.5
+    },
+    "fighting": {
+      "normal": 2,
+      "ice": 2,
+      "poison": 0.5,
+      "flying": 0.5,
+      "psychic": 0.5,
+      "bug": 0.5,
+      "rock": 2,
+      "ghost": 0,
+      "dark": 2,
+      "steel": 2,
+      "fairy": 0.5
+    },
+    "poison": {
+      "grass": 2,
+      "poison": 0.5,
+      "ground": 0.5,
+      "rock": 0.5,
+      "ghost": 0.5,
+      "steel": 0,
+      "fairy": 2
+    },
+    "ground": {
+      "fire": 2,
+      "electric": 2,
+      "grass": 0.5,
+      "poison": 2,
+      "flying": 0,
+      "bug": 0.5,
+      "rock": 2,
+      "steel": 2
+    },
+    "flying": {
+      "electric": 0.5,
+      "grass": 2,
+      "fighting": 2,
+      "bug": 2,
+      "rock": 0.5,
+      "steel": 0.5
+    },
+    "psychic": {
+      "fighting": 2,
+      "poison": 2,
+      "psychic": 0.5,
+      "dark": 0,
+      "steel": 0.5
+    },
+    "bug": {
+      "fire": 0.5,
+      "grass": 2,
+      "fighting": 0.5,
+      "poison": 0.5,
+      "flying": 0.5,
+      "psychic": 2,
+      "ghost": 0.5,
+      "dark": 2,
+      "steel": 0.5,
+      "fairy": 0.5
+    },
+    "rock": {
+      "fire": 2,
+      "ice": 2,
+      "fighting": 0.5,
+      "ground": 0.5,
+      "flying": 2,
+      "bug": 2,
+      "steel": 0.5
+    },
+    "ghost": {
+      "normal": 0,
+      "psychic": 2,
+      "ghost": 2,
+      "dark": 0.5
+    },
+    "dragon": {
+      "dragon": 2,
+      "steel": 0.5,
+      "fairy": 0
+    },
+    "dark": {
+      "fighting": 0.5,
+      "psychic": 2,
+      "ghost": 2,
+      "dark": 0.5,
+      "fairy": 0.5
+    },
+    "steel": {
+      "fire": 0.5,
+      "water": 0.5,
+      "electric": 0.5,
+      "ice": 2,
+      "rock": 2,
+      "steel": 0.5,
+      "fairy": 2
+    },
+    "fairy": {
+      "fire": 0.5,
+      "fighting": 2,
+      "poison": 0.5,
+      "dragon": 2,
+      "dark": 2,
+      "steel": 0.5
+    }
+  }
+}

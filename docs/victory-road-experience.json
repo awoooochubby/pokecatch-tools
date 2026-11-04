@@ -1,0 +1,66 @@
+{
+  "engine": "cf8c0470ea5d3c4ef263688d6ef5b76c34f8c99cfddee893ec87e7e197662c9a",
+  "at": "2026-11-04T12:00:00.000Z",
+  "assumptions": [
+    "原引擎随机遭遇抽样，非解析精确期望",
+    "在线，无伙伴/经验增益，未触顶；每只精灵分别四舍五入",
+    "仅击倒奖励，不含捕获/伙伴糖果/道具；单场训练家按整队敌人算一场",
+    "满血成功清完整章；不推测战斗耗时；固定时刻的昼夜/天气/每日热点",
+    "repeat=false 保留剧情首领；repeat=true 跳过已被永久清除的 keep 首领"
+  ],
+  "summaries": [
+    {
+      "chapter": 59,
+      "title": "Route Victoire",
+      "repeat": true,
+      "samples": 50000,
+      "phase": "day",
+      "groups": {
+        "wild": {
+          "battlesPerRun": 10,
+          "enemiesPerRun": 10,
+          "meanLevel": 70.788708,
+          "minLevel": 50,
+          "maxLevel": 73,
+          "xpPerBattle": 1934.733618,
+          "activeXpPerBattle": 2128.239954,
+          "xpPerRun": 19347.33618
+        },
+        "trainer": {
+          "battlesPerRun": 6,
+          "enemiesPerRun": 11.9958,
+          "meanLevel": 71.10951332966539,
+          "minLevel": 67,
+          "maxLevel": 72,
+          "xpPerBattle": 6127.5220033333335,
+          "activeXpPerBattle": 6740.56423,
+          "xpPerRun": 36765.13202
+        },
+        "gym": {
+          "battlesPerRun": 1,
+          "enemiesPerRun": 6,
+          "meanLevel": 67,
+          "minLevel": 64,
+          "maxLevel": 72,
+          "xpPerBattle": 13228,
+          "activeXpPerBattle": 14553,
+          "xpPerRun": 13228
+        }
+      },
+      "battlesPerRun": 17,
+      "enemiesPerRun": 27.9958,
+      "meanEnemyLevel": 70.11418069853335,
+      "xpPerBattle": 4078.8510705882354,
+      "activeXpPerBattle": 4486.987348235294,
+      "xpPerRun": 69340.4682,
+      "routeXp95": [
+        69277.62909760329,
+        69403.30730239672
+      ],
+      "xpPerBattle95": [
+        4075.1546528001936,
+        4082.547488376277
+      ]
+    }
+  ]
+}

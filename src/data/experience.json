@@ -1,0 +1,309 @@
+{
+  "hash": "cf8c0470ea5d3c4ef263688d6ef5b76c34f8c99cfddee893ec87e7e197662c9a",
+  "scale": 3,
+  "growthFrom": 10,
+  "growthExtra": 1,
+  "timeRatio": 1.328114089336069,
+  "rankMax": 5,
+  "rankXp": 1.5,
+  "regions": [
+    {
+      "key": "kanto",
+      "name": "Kanto",
+      "open": true,
+      "base": 0,
+      "step": 8,
+      "xp": 1
+    },
+    {
+      "key": "johto",
+      "name": "Johto",
+      "open": false,
+      "base": 0,
+      "step": 8,
+      "xp": 1.25
+    },
+    {
+      "key": "hoenn",
+      "name": "Hoenn",
+      "open": false,
+      "base": 0,
+      "step": 8,
+      "xp": 1.25
+    },
+    {
+      "key": "sinnoh",
+      "name": "Sinnoh",
+      "open": false,
+      "base": 0,
+      "step": 8,
+      "xp": 1.35
+    }
+  ],
+  "chapters": [
+    {
+      "name": "Badge Roche",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Cascade",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Foudre",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Prisme",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Âme",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Marais",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Volcan",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Terre",
+      "region": "kanto"
+    },
+    {
+      "name": "Route Victoire",
+      "region": "kanto"
+    },
+    {
+      "name": "Conseil 4 : Olga",
+      "region": "kanto"
+    },
+    {
+      "name": "Conseil 4 : Aldo",
+      "region": "kanto"
+    },
+    {
+      "name": "Conseil 4 : Agatha",
+      "region": "kanto"
+    },
+    {
+      "name": "Conseil 4 : Peter",
+      "region": "kanto"
+    },
+    {
+      "name": "Maître de la Ligue",
+      "region": "kanto"
+    },
+    {
+      "name": "Badge Zéphyr",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Essaim",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Plaine",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Brume",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Choc",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Minéral",
+      "region": "johto"
+    },
+    {
+      "name": "Lac Colère",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Glacier",
+      "region": "johto"
+    },
+    {
+      "name": "Tour Radio",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Lever",
+      "region": "johto"
+    },
+    {
+      "name": "Route Victoire",
+      "region": "johto"
+    },
+    {
+      "name": "Conseil 4 : Clément",
+      "region": "johto"
+    },
+    {
+      "name": "Conseil 4 : Koga",
+      "region": "johto"
+    },
+    {
+      "name": "Conseil 4 : Aldo",
+      "region": "johto"
+    },
+    {
+      "name": "Conseil 4 : Marion",
+      "region": "johto"
+    },
+    {
+      "name": "Maître de la Ligue",
+      "region": "johto"
+    },
+    {
+      "name": "Mont Argenté",
+      "region": "johto"
+    },
+    {
+      "name": "Badge Roche (Hoenn)",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Poing",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Dynamo",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Chaleur",
+      "region": "hoenn"
+    },
+    {
+      "name": "Mont Chimnée",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Balance",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Plume",
+      "region": "hoenn"
+    },
+    {
+      "name": "Mont Mémoria",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Esprit",
+      "region": "hoenn"
+    },
+    {
+      "name": "La crise",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Pluie",
+      "region": "hoenn"
+    },
+    {
+      "name": "Route Victoire",
+      "region": "hoenn"
+    },
+    {
+      "name": "Conseil 4 : Damien",
+      "region": "hoenn"
+    },
+    {
+      "name": "Conseil 4 : Spectra",
+      "region": "hoenn"
+    },
+    {
+      "name": "Conseil 4 : Glacia",
+      "region": "hoenn"
+    },
+    {
+      "name": "Conseil 4 : Aragon",
+      "region": "hoenn"
+    },
+    {
+      "name": "Maître de la Ligue",
+      "region": "hoenn"
+    },
+    {
+      "name": "Badge Charbon",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Forêt",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Fantôme",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Pavé",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Palustre",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Mine",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Les Lacs",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Glaçon",
+      "region": "sinnoh"
+    },
+    {
+      "name": "QG Galaxie",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Monde Distorsion",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Badge Phare",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Route Victoire",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Conseil 4 : Aaron",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Conseil 4 : Terry",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Conseil 4 : Adrien",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Conseil 4 : Lucio",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Maître de la Ligue",
+      "region": "sinnoh"
+    },
+    {
+      "name": "Mont Abrupt",
+      "region": "sinnoh"
+    }
+  ]
+}
