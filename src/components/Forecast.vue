@@ -16,11 +16,12 @@ watch([chapters, trials, full, selected], () => r.store.set('forecastPreferences
 const name = chapterLabel;
 watch(() => s.catalog, catalog => {
   if (!catalog) return;
-  const valid = chapters.value.filter(id => catalog.chapters.some(ch => ch.id === id));
-  chapters.value = valid.length ? valid : [...new Set([catalog.current, ...catalog.chapters.filter(ch => ['QG Galaxie', 'Badge Phare', 'Route Victoire'].includes(ch.name)).map(ch => ch.id)])].slice(0, 4);
+  const valid = [...new Set(chapters.value.flatMap(id=>{const ch=catalog.chapters.find(ch=>ch.id===id);return ch?[ch.entry??id]:[];}))];
+  const current=catalog.chapters.find(ch=>ch.id===catalog.current)?.entry??catalog.current;
+  chapters.value = valid.length ? valid : [...new Set([current, ...catalog.chapters.filter(ch => ['QG Galaxie', 'Badge Phare', 'Route Victoire'].includes(ch.name)).map(ch => ch.id)])].slice(0, 4);
   if (selected.value && !catalog.team.some(m => m.uid === selected.value)) selected.value = '';
 }, { immediate: true });
-const chapterOptions = computed(() => s.catalog?.chapters.map(ch => ({ label: `${name(ch.name)}${ch.id === s.catalog!.current ? '（当前）' : ''}`, value: ch.id })) || []);
+const chapterOptions = computed(() => s.catalog?.chapters.filter(ch=>(ch.entry??ch.id)===ch.id).map(ch => ({ label: `${name(ch.dungeonName||ch.name)}${ch.id === (s.catalog!.chapters.find(c=>c.id===s.catalog!.current)?.entry??s.catalog!.current) ? '（当前）' : ''}`, value: ch.id })) || []);
 const memberOptions = computed(() => [{ label: '整队经验合计', value: '' }, ...(s.report?.catalog || s.catalog)?.team.map(m => ({ label: `${pokemonName(m.id)} Lv.${m.level} · ${m.uid.slice(-6)}`, value: m.uid })) || []]);
 const rows = computed(() => (s.report?.rows || []).map(row => ({ ...row, metric: selected.value ? row.members[selected.value] : row }))
   .sort((a, b) => a.error ? 1 : b.error ? -1 : (b.metric?.rate.mean || 0) - (a.metric?.rate.mean || 0)));
@@ -29,7 +30,7 @@ const overBudget = computed(() => chapters.value.length * trials.value > 8192 ||
 const validTrials = computed(() => Number.isInteger(trials.value) && trials.value >= 128 && trials.value <= 2048);
 const buddyLabel = computed(() => { const mon = s.catalog?.team.find(m => m.uid === s.catalog?.buddy); return mon ? pokemonName(mon.id) : s.catalog?.buddy ? '不在出战队伍' : '未指定'; });
 const changed = computed(() => s.report && (JSON.stringify(s.report.options.chapters) !== JSON.stringify(chapters.value) || s.report.options.start !== (full.value ? 'full' : 'current') || s.report.options.trials !== trials.value));
-function run() { const options: ForecastOptions = { chapters: [...chapters.value], trials: trials.value, seed: 1729, start: full.value ? 'full' : 'current' }; r.forecast.run(options); }
+function run() { const options: ForecastOptions = { chapters: [...chapters.value], trials: trials.value, seed: 1729, start: full.value ? 'full' : 'current',unit:'dungeon' }; r.forecast.run(options); }
 function exportReport() {
   if (!s.report) return;
   const url = URL.createObjectURL(new Blob([JSON.stringify(s.report, null, 2)], { type: 'application/json' })), a = document.createElement('a');
@@ -37,7 +38,7 @@ function exportReport() {
 }
 </script>
 <template>
-  <p class="hint">无需先去地图挂机。用当前出战队伍，直接模拟整章战斗、实得经验和升级，比较哪张图更适合练级。</p>
+  <p class="hint">无需先去地图挂机。按完整副本模拟战斗、实得经验和升级；联盟把四天王、冠军及全部道中一起计算。</p>
   <div class="actions"><NButton size="small" secondary :disabled="s.busy" data-testid="load-forecast" @click="r.forecast.load">{{ s.catalog ? '重新读取当前队伍' : '读取当前队伍' }}</NButton><NButton v-if="s.busy" size="small" data-testid="cancel-forecast" @click="r.forecast.cancel">取消模拟</NButton></div>
   <p class="hint" data-testid="forecast-phase">{{ s.phase }}</p>
   <NAlert v-if="s.error" type="error" :show-icon="false">{{ s.error }}</NAlert>

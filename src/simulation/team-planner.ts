@@ -25,7 +25,7 @@ function threatFor(catalog:Catalog,route:RouteResult):Target|undefined {
 export async function planTeam(source:string, rawSave:string, now:number, options:PlanOptions,
   progress:(phase:string,completed:number,total:number)=>void,existing?:Awaited<ReturnType<typeof createSimulator>>):Promise<PlanReport> {
   if(!Number.isFinite(options.seed))throw new Error('配队随机种子无效');
-  if(options.goal.from!=='chapter')throw new Error('目标配队从本章开头满血出发；当前战斗请使用路线诊断');
+  if(options.goal.from!=='chapter')throw new Error('目标配队从副本入口满血出发；当前战斗请使用路线诊断');
   const engine=existing??await createSimulator(source,rawSave,now),catalog=engine.catalog,original=[...catalog.activeOrder];
   if(!original.length||original.length>6||original.some(uid=>!catalog.candidates.some(m=>m.uid===uid&&m.eligible)))throw new Error('当前出战队伍不可用，请先在游戏中调整到等级上限内');
   const candidate=(uid:string)=>catalog.candidates.find(m=>m.uid===uid)!;
@@ -128,7 +128,7 @@ export async function planTeam(source:string, rawSave:string, now:number, option
   }
   plans.sort((a,b)=>Number(pass(b.route))-Number(pass(a.route))||Number(a.score===null)-Number(b.score===null)||(a.score??Infinity)-(b.score??Infinity)||a.route.wear.mean-b.route.wear.mean);
   return {catalog,options,baseline,plans,searched:searched.size,verified,generatedAt:now,assumptions:[
-    '按读取时保存的本章路线，从章首满血出发；重新出发时游戏可能重新生成节点。目标节点按下拉列表编号识别。',
+    '从固定副本入口满血开始；联盟包含所有四天王、冠军和之前的道中，阶段交接按原引擎治疗。目标属于副本，不因内部章节切换而重置。普通路线重开时遭遇可能变化。',
     '先要求目标通过率的 Wilson 95% 下界达到 95%；筛选每组 128 次，最终用不同种子独立复核 512 次。有限样本不是必胜保证。',
     `最多筛选 ${PLAN_SCREEN_LIMIT} 支队伍、换入两名成员；这是有预算的局部搜索，不承诺全局最优。单挑伤害和速度只用于挑选候选，结论由连续路线模拟验证。`,
     '评分 = 预计练级分钟 + 20 × 新成员数 +（保留成员改变相对顺序时加 1）。20 分钟是减少配置改动的偏好权重，并非实际换人耗时。',

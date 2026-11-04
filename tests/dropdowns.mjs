@@ -49,7 +49,7 @@ try {
   }
   await page.getByRole('tab',{name:'对策',exact:true}).click();await page.getByTestId('load-box').click();
   await page.getByTestId('counter-phase').filter({hasText:'已读取快照'}).waitFor({timeout:30000});
-  await wheelSelect('配队目标节点');await wheelSelect('本章对策目标');
+  await wheelSelect('配队目标节点');await wheelSelect('副本对策目标');
   await page.getByRole('button',{name:'指定精灵',exact:true}).click();await wheelSelect('指定精灵名称');
   await page.getByRole('button',{name:/高级设置与自选候选/}).click();await wheelSelect('候选精灵');
   await page.getByTestId('load-forecast').click();

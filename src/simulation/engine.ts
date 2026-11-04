@@ -1,3 +1,4 @@
+import { buildDungeon } from './dungeon';
 import { extractProgram, verifySource, ENGINE_HASH, ENGINE_TIMER, ENGINE_DATA_NAMES } from './program';
 import type { Catalog, CombatFacts, Options, Report, Target, MatchResult, RouteResult, RouteThreat, RouteFailure } from './types';
 import { Moments, wilson, qualifies } from './statistics';
@@ -80,6 +81,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     return s;
   };
   const base = clean();
+  const dungeon=buildDungeon(t,base);
   let catalog!: Catalog;
   g.sandbox(base, () => {
     const cap = g.levelCap();
@@ -97,26 +99,28 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     if (current) {
       if (current.boss || current.roam) throw new Error('特殊首领的机制尚未适配');
       current.enemies.forEach((m: Vendor, i: number) => { if (m.hp > 0) targets.push({ key: `current:${i}`, label: `当前 · ${g.DEX[m.id].name} Lv.${m.level}`, kind: current.kind, id: m.id, level: m.level,
-        node: copy(base.adv.nodes[base.adv.node]), foes: copy(current.enemies), selected: i, gym: current.gym, power: current.power, source: 'current', nodeIndex: base.adv.node, preserveHp: true }); });
+        node: copy(base.adv.nodes[base.adv.node]), foes: copy(current.enemies), selected: i, gym: current.gym, power: current.power, source: 'current', nodeIndex: dungeon.info.current, chapterIndex:base.adv.chapter,preserveHp: true }); });
     }
     const chapter = t.STORY.CHAPTERS[base.adv.chapter];
-    for (const [index, node] of (base.adv.nodes || []).entries()) {
-      if (index < base.adv.node || current && index === base.adv.node) continue;
+    for (const info of dungeon.info.nodes) {
+      const index=info.index,node=dungeon.rawNodes[index],chapterIndex=info.chapter;
+      if (index < dungeon.info.current || current && index === dungeon.info.current) continue;
       if (node.type === 'wild') {
-        for (const p of a.zonePool(node, base.adv.chapter, false, null, true, true)) {
+        for (const p of a.zonePool(node, chapterIndex, false, null, true, true)) {
           if (!p.on || !g.DEX[p.id] || !Number.isInteger(p.max)) continue;
-          targets.push({ key: `wild:${index}:${p.id}`, label: `${node.name} · ${g.DEX[p.id].name} Lv.${p.max}（可能遭遇，按区域上限）`, kind: 'wild', id: p.id, level: p.max, node: copy(node), foes: [{ id: p.id, level: p.max, foe: true, shiny: false }], source: 'wild', nodeIndex: index, levelRange: [p.min,p.max] });
+          targets.push({ key: `wild:${index}:${p.id}`, label: `${node.name} · ${g.DEX[p.id].name} Lv.${p.max}（可能遭遇，按区域上限）`, kind: 'wild', id: p.id, level: p.max, node: copy(node), foes: [{ id: p.id, level: p.max, foe: true, shiny: false }], source: 'wild', nodeIndex: index, chapterIndex,levelRange: [p.min,p.max] });
         }
       } else if (node.type === 'gym') {
-        const foes = t.STORY.gymTeam(base.adv.chapter, node.gym).map(([id, level]: number[]) => ({ id, level, foe: true, shiny: false }));
-        for (const [i, m] of foes.entries()) targets.push({ key: `gym:${index}:${i}`, label: `${node.name} · ${g.DEX[m.id].name} Lv.${m.level}`, kind: 'gym', id: m.id, level: m.level, node: copy(node), foes, selected: i, gym: copy(node.gym), source: 'boss', nodeIndex: index });
+        const foes = t.STORY.gymTeam(chapterIndex, node.gym).map(([id, level]: number[]) => ({ id, level, foe: true, shiny: false }));
+        for (const [i, m] of foes.entries()) targets.push({ key: `gym:${index}:${i}`, label: `${node.name} · ${g.DEX[m.id].name} Lv.${m.level}`, kind: 'gym', id: m.id, level: m.level, node: copy(node), foes, selected: i, gym: copy(node.gym), source: 'boss', nodeIndex: index,chapterIndex });
       } else if (node.type === 'trainer' && node.team?.length) {
         const foes = node.team.map(([id,level]:number[]) => ({ id, level, foe:true, shiny:false, ...node.statMult > 1 ? {statMult:node.statMult} : {} }));
-        for (const [i,m] of foes.entries()) targets.push({key:`trainer:${index}:${i}`,label:`训练家 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:'trainer',id:m.id,level:m.level,node:copy(node),foes,selected:i,power:node.gymTrainer ? cfg.GYM_TRAINERS.damage : undefined,source:'trainer',nodeIndex:index});
+        for (const [i,m] of foes.entries()) targets.push({key:`trainer:${index}:${i}`,label:`训练家 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:'trainer',id:m.id,level:m.level,node:copy(node),foes,selected:i,power:node.gymTrainer ? cfg.GYM_TRAINERS.damage : undefined,source:'trainer',nodeIndex:index,chapterIndex});
       }
     }
-    catalog = { version: ENGINE_HASH.slice(0, 10), cap, candidates, targets, chapter: chapter.name, chapterIndex:base.adv.chapter,nodeIndex:base.adv.node,nodeName:base.adv.nodes?.[base.adv.node]?.name || '',randomTrainers:(base.adv.nodes||[]).filter((node:Vendor,i:number)=>(i>base.adv.node||i===base.adv.node&&!current)&&node.type==='trainer'&&!node.team?.length).length, capturedAt: now,
-      activeOrder: g.activeTeam().map(String), autoSwitch: base.autoSwitch !== false,centers:(base.adv.nodes||[]).flatMap((node:Vendor,i:number)=>node.type==='heal'?[{node:i,name:node.name}]:[]), nodes:(base.adv.nodes||[]).map((node:Vendor,index:number)=>({index,name:node.name||node.type,type:node.type})),
+    catalog = { version: ENGINE_HASH.slice(0, 10), cap, candidates, targets, chapter: dungeon.info.name, chapterIndex:dungeon.info.chapters[0],nodeIndex:dungeon.info.current,nodeName:base.adv.nodes?.[base.adv.node]?.name || '',dungeon:dungeon.info,
+      randomTrainers:dungeon.rawNodes.filter((node:Vendor,i:number)=>(i>dungeon.info.current||i===dungeon.info.current&&!current)&&node.type==='trainer'&&!node.team?.length).length,capturedAt: now,
+      activeOrder: g.activeTeam().map(String), autoSwitch: base.autoSwitch !== false,centers:dungeon.rawNodes.flatMap((node:Vendor,i:number)=>['heal','transition'].includes(node.type)?[{node:i,name:node.name}]:[]),nodes:dungeon.info.nodes,
       warnings: ['道中单挑列表按区域最高等级；整段路线模式按游戏实际遭遇概率生成敌人。', '完整战斗期望为抽样估计，显示误差；不会把抽样全胜称为必胜。', '当前版本的招式优先度不参与行动排序；原引擎按速度处理。'] };
   });
 
@@ -135,12 +139,10 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     });
   }
   function prepareRoute(s:Vendor, opts:Options) {
-    if (!opts.goal) return;
-    if (opts.goal.from === 'chapter') { s.adv.node=0; s.adv.battle=null; s.adv.pending=null; }
-    const end=opts.goal.node+(opts.goal.objective==='clear'?1:0);
-    s.adv.nodes=s.adv.nodes.slice(0,end);
+    if(opts.goal?.from==='chapter')dungeon.prepare(s,true);
   }
   function setupTarget(s: Vendor, target: Target) {
+    s.adv.chapter=target.chapterIndex??base.adv.chapter;
     const foes: Vendor[] = copy(target.foes).map((m: Vendor, i: number) => ({ ...m, uid: `sim-foe:${i}`, foe: true }));
     const slots = a.fieldSize(target.kind, foes.length, target.gym?.double);
     const hpMult = (slots >= cfg.TEAM_SIZE ? 1 + cfg.ENEMY_HP_PER_ALLY * (cfg.TEAM_SIZE - 1) : 1)
@@ -169,10 +171,11 @@ export async function createSimulator(source: string, rawSave: string, now: numb
       return { order: speed > enemySpeed ? '速度先手' : speed < enemySpeed ? '速度后手' : '同速随机', move: `${move.name} (${move.key})`, damage: [sum(minP, .85), sum(maxP, 1)], enemyHp: g.curHp(foe), speed, enemySpeed };
     });
   }
-  function trial(s: Vendor, route: boolean, advanceClock=false) {
+  function trial(s: Vendor, route: boolean, advanceClock=false, goal?:Options['goal']) {
     simulationTime=now;
-    const result = { won: false, loss: 1, wear: 0, kos: 0, actions: 0, hits: 0, threats:[] as RouteThreat[], failure:undefined as RouteFailure | undefined };
-    const routeNodes=copy(s.adv.nodes), costs=new Map<string,RouteThreat>(), encounters=new Map<string,Target[]>();
+    const result = { won: false, loss: 1, wear: 0, kos: 0, actions: 0, hits: 0, threats:[] as RouteThreat[], failure:undefined as RouteFailure | undefined,visited:new Set<number>() };
+    const end=goal?goal.node+(goal.objective==='clear'?1:0):dungeon.info.nodes.length;
+    const routeNodes=route?copy(dungeon.rawNodes.slice(0,end)):copy(s.adv.nodes),position=()=>dungeon.index(s),costs=new Map<string,RouteThreat>(), encounters=new Map<string,Target[]>();
     let lastHurt:RouteThreat|undefined;
     const party = s.mons.filter((m: Vendor) => s.team.includes(m.uid));
     const initialLevels = party.map((m: Vendor) => m.level);
@@ -187,7 +190,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
         if (party.some((m: Vendor, i: number) => m.level !== initialLevels[i])) throw new Error('模拟等级发生变化，已拒绝输出不符合固定等级条件的结果');
         result.threats=[...costs.values()];
         if (!won && lastHurt) {
-          const center=routeNodes.findIndex((node:Vendor,i:number)=>i>lastHurt!.node&&node.type==='heal');
+          const center=routeNodes.findIndex((node:Vendor,i:number)=>i>lastHurt!.node&&['heal','transition'].includes(node.type));
           const until=center<0?routeNodes.length:center;
           result.failure={node:lastHurt.node,id:lastHurt.id,label:lastHurt.label,count:1,nextCenter:center<0?null:routeNodes[center].name,
             battlesToCenter:routeNodes.filter((node:Vendor,i:number)=>i>lastHurt!.node&&i<until&&['wild','trainer','gym','static'].includes(node.type)).length,targetKey:lastHurt.targetKey};
@@ -201,12 +204,12 @@ export async function createSimulator(source: string, rawSave: string, now: numb
           const hurt=Math.max(0,previous-event.hp), knockout=previous>0&&event.hp<=0;
           if (route && hurt>0) {
             const battle=s.adv.battle, foe=event.type==='attack'&&event.side==='enemy'?battle?.enemies.find((m:Vendor)=>String(m.uid)===String(event.uid)):null;
-            const key=`${s.adv.node}:${foe?.id??'status'}`,label=foe?g.DEX[foe.id].name:'状态伤害／其他伤害';
-            let cost=costs.get(key);if(!cost){cost={node:s.adv.node,id:foe?.id,label,wear:0,kos:0,samples:1};costs.set(key,cost);}
+            const key=`${position()}:${foe?.id??'status'}`,label=foe?g.DEX[foe.id].name:'状态伤害／其他伤害';
+            let cost=costs.get(key);if(!cost){cost={node:position(),id:foe?.id,label,wear:0,kos:0,samples:1};costs.set(key,cost);}
             cost.wear+=hurt/totalHp;cost.kos+=+knockout;lastHurt=cost;
             if (foe) {
-              const encounterKey=JSON.stringify([s.adv.node,battle.kind,battle.enemies.map((m:Vendor)=>[m.id,m.level])]);
-              if (!encounters.has(encounterKey)) encounters.set(encounterKey,battle.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${encounterKey}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:battle.kind,id:m.id,level:m.level,node:copy(routeNodes[s.adv.node]),foes:copy(battle.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(battle.gym??null),power:battle.power,source:'diagnostic',nodeIndex:s.adv.node,preserveHp:true})));
+              const encounterKey=JSON.stringify([position(),battle.kind,battle.enemies.map((m:Vendor)=>[m.id,m.level])]);
+              if (!encounters.has(encounterKey)) encounters.set(encounterKey,battle.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${encounterKey}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:battle.kind,id:m.id,level:m.level,node:copy(routeNodes[position()]),foes:copy(battle.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(battle.gym??null),power:battle.power,source:'diagnostic',nodeIndex:position(),chapterIndex:s.adv.chapter,preserveHp:true})));
               cost.targetKey=encounters.get(encounterKey)![battle.enemies.findIndex((m:Vendor)=>String(m.uid)===String(event.uid))]?.key;
             }
           }
@@ -223,7 +226,8 @@ export async function createSimulator(source: string, rawSave: string, now: numb
       let elapsedSteps=0;
       try {
         for (let step = 0; step < 20000; step++) {
-          if (route && s.adv.node >= s.adv.nodes.length && !s.adv.battle) { terminal = true; break; }
+          if (route && position() >= end && !s.adv.battle) { terminal = true; break; }
+          if(route)result.visited.add(position());
           // speed() calls the vendor's ensure(), which rebuilds an empty
           // route. Check an empty/already-reached goal before querying it.
           if(advanceClock)simulationTime=now+elapsedSteps*Math.max(cfg.ACTION_MS,cfg.STEP_MS)/a.speed();
@@ -234,8 +238,8 @@ export async function createSimulator(source: string, rawSave: string, now: numb
           if (s.adv.pending) throw new Error('剩余路线含未确认的赠送或选择，请在游戏中处理后重新读取');
           // Capture full enemy HP before anyone acts; reasons and follow-up
           // counter searches must not use a partly defeated sampled target.
-          if(route&&s.adv.battle){const b=s.adv.battle,k=JSON.stringify([s.adv.node,b.kind,b.enemies.map((m:Vendor)=>[m.id,m.level])]);
-            if(!encounters.has(k)) encounters.set(k,b.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${k}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:b.kind,id:m.id,level:m.level,node:copy(routeNodes[s.adv.node]),foes:copy(b.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(b.gym??null),power:b.power,source:'diagnostic',nodeIndex:s.adv.node,preserveHp:true})));}
+          if(route&&s.adv.battle){const b=s.adv.battle,k=JSON.stringify([position(),b.kind,b.enemies.map((m:Vendor)=>[m.id,m.level])]);
+            if(!encounters.has(k)) encounters.set(k,b.enemies.map((m:Vendor,i:number)=>({key:`diagnostic:${k}:${i}`,label:`路线遇敌 · ${g.DEX[m.id].name} Lv.${m.level}`,kind:b.kind,id:m.id,level:m.level,node:copy(routeNodes[position()]),foes:copy(b.enemies).map((mon:Vendor,j:number)=>{mon.uid=`diagnostic-foe:${j}`;delete mon.caughtAt;return mon;}),selected:i,gym:copy(b.gym??null),power:b.power,source:'diagnostic',nodeIndex:position(),chapterIndex:s.adv.chapter,preserveHp:true})));}
           let events: Vendor[];
           elapsedSteps++;
           try { events = a.step(); }
@@ -248,7 +252,7 @@ export async function createSimulator(source: string, rawSave: string, now: numb
           }
           for (const event of events) {
             if (!captured.has(event)) processEvent(event);
-            if (event.type === 'chapterEnd') { terminal = true; break; }
+            if (event.type === 'chapterEnd') { if(route&&dungeon.info.chapters.includes(s.adv.chapter))dungeon.advance(s);else {terminal=true;break;} }
             if (event.type === 'defeat') { terminal = false; break; }
           }
           // Heal nodes and drain are reflected in the engine's actual state.
@@ -273,8 +277,8 @@ export async function createSimulator(source: string, rawSave: string, now: numb
     if (!Number.isInteger(opts.trials) || opts.trials < 128 || opts.trials > 8192 || !selected.length || new Set(selected).size !== selected.length) throw new Error('请选择候选，样本数需为 128–8192 的整数');
     if (!Number.isFinite(opts.seed) || !Number.isFinite(opts.maxLoss) || !Number.isFinite(opts.minWin) || opts.maxLoss < 0 || opts.maxLoss > 1 || opts.minWin < 0 || opts.minWin > 1) throw new Error('模拟参数不合法');
     for (const uid of selected) if (!catalog.candidates.some(m => m.uid === uid && m.eligible)) throw new Error('候选不可用，请重新读取存档');
-    if(opts.goal && (opts.mode==='matrix'||!Number.isInteger(opts.goal.node)||opts.goal.node<0||opts.goal.node>=(base.adv.nodes?.length||0)||!['reach','clear'].includes(opts.goal.objective)||!['chapter','current'].includes(opts.goal.from)||opts.goal.from==='current'&&opts.goal.node<base.adv.node)) throw new Error('路线目标无效，请重新选择节点');
-    if(opts.goal?.objective==='reach'&&opts.goal.from==='current'&&opts.goal.node===base.adv.node&&base.adv.battle) throw new Error('已经到达该节点；要检查当前战斗请选“打完该节点”');
+    if(opts.goal && (opts.mode==='matrix'||!Number.isInteger(opts.goal.node)||opts.goal.node<0||opts.goal.node>=dungeon.info.nodes.length||!['reach','clear'].includes(opts.goal.objective)||!['chapter','current'].includes(opts.goal.from)||opts.goal.from==='current'&&opts.goal.node<dungeon.info.current)) throw new Error('路线目标无效，请重新选择节点');
+    if(opts.goal?.objective==='reach'&&opts.goal.from==='current'&&opts.goal.node===dungeon.info.current&&base.adv.battle) throw new Error('已经到达该节点；要检查当前战斗请选“打完该节点”');
     for(const [uid,level] of Object.entries(opts.levels||{})) { const m=catalog.candidates.find(m=>m.uid===uid);if(opts.mode==='matrix'||!selected.includes(uid)||!m||!Number.isInteger(level)||level<m.level||level>m.cap)throw new Error('计划等级必须处于当前等级与上限之间'); }
     const targets = opts.mode === 'matrix' ? opts.targetKeys.map(key => { const t = catalog.targets.find(t => t.key === key); if (!t) throw new Error('目标已失效'); return t; }) : [];
     for (const [i, c] of (opts.mode === 'matrix' ? custom : []).entries()) {
@@ -282,31 +286,32 @@ export async function createSimulator(source: string, rawSave: string, now: numb
       targets.push({ key: `custom:${i}`, label: `指定野生 · ${g.DEX[c.id].name} Lv.${c.level}`, kind: 'wild', id: c.id, level: c.level, node: { type: 'wild', name: '指定野生目标', bg: 'prairie' }, foes: [{ id: c.id, level: c.level, foe: true, shiny: false }] });
     }
     const report: Report = { catalog: copy(catalog), options: opts, results: [], routes: [], generatedAt: now,
-      assumptions: ['使用读取时刻的时间与天气，分析期间冻结时钟。', '保留闪光、地下等级、地区限制、招式重排与继承；不使用原作特性或招式优先度。', '战斗在独立状态中执行，终局后跳过经验、进化、捕获和货币奖励；路线中等级固定。', '当前敌人单挑保留其存档 HP，但重新建立行动队列；不是对当前战斗下一回合的精确续算。路线模式保留已有队列。', '先手与伤害区间按原引擎确定；胜率用 Wilson 95% 区间，期望缺血用有界经验 Bernstein 95% 区间，累计承伤与行动数用近似区间。', '区间为单组置信范围，不保证多方案筛选后的整体最优或整体 95% 覆盖。', '排序假设所选队伍从当前节点起生效；游戏中的待更新队伍可能在下次出发才生效。', '排序只影响当前出战队伍，不改变 box 的显示顺序，也不会自动修改存档。'] };
+      assumptions: ['使用读取时刻的时间与天气，分析期间冻结时钟。', '保留闪光、地下等级、地区限制、招式重排与继承；不使用原作特性或招式优先度。', '战斗在独立状态中执行，终局后跳过经验、进化、捕获和货币奖励；路线中等级固定。', '当前敌人单挑保留其存档 HP，但重新建立行动队列；不是对当前战斗下一回合的精确续算。路线模式保留已有队列。', '先手与伤害区间按原引擎确定；胜率用 Wilson 95% 区间，期望缺血用有界经验 Bernstein 95% 区间，累计承伤与行动数用近似区间。', '区间为单组置信范围，不保证多方案筛选后的整体最优或整体 95% 覆盖。', '排序假设所选队伍从当前节点起生效；联盟跨四天王与冠军连续执行，交接时按原引擎治疗；游戏中的待更新队伍可能在下次出发才生效。', '排序只影响当前出战队伍，不改变 box 的显示顺序，也不会自动修改存档。'] };
     if(opts.goal)report.assumptions[0]='目标路线从读取时刻按游戏标准行动节奏推进时钟，计入途中加成到期与天气变化。';
     let completed = 0;
     if (opts.mode !== 'matrix') {
       if (selected.length > cfg.TEAM_SIZE) throw new Error('路线排序最多选择六只精灵');
       if (base.adv.event || base.adv.zone || base.adv.tower || !(base.adv.nodes?.length)) throw new Error('没有可用的普通冒险路线');
-      const search = opts.mode === 'order' ? orderCandidates(selected) : { orders: [selected], search: '按选定顺序连续执行剩余章节节点' };
+      const search = opts.mode === 'order' ? orderCandidates(selected) : { orders: [selected], search: '按选定顺序连续执行剩余副本节点' };
       report.search = search.search;
       const modes = opts.mode === 'order' ? [catalog.autoSwitch, !catalog.autoSwitch] : [opts.autoSwitch === 'current' ? catalog.autoSwitch : opts.autoSwitch === 'on'];
       const total = search.orders.length * modes.length;
       if (total * opts.trials > SAMPLE_BUDGET) throw new Error('本次计算量过大，请降低样本数或减少排序成员');
       for (const order of search.orders) for (const autoSwitch of modes) {
         const loss = new Moments(), wear = new Moments(), kos = new Moments(); let wins = 0;
-        const threats=new Map<string,RouteThreat>(),failures=new Map<string,RouteFailure>();
+        const threats=new Map<string,RouteThreat>(),failures=new Map<string,RouteFailure>(),reached=new Map<number,number>();
         for (let i = 0; i < opts.trials; i++) {
           seed = (opts.seed + Math.imul(i + 1, 2654435761)) >>> 0;
           const s = clean(); arrange(s, order, undefined, opts.start,opts.levels); s.autoSwitch = autoSwitch; prepareRoute(s,opts);
-          const r = trial(s, true,!!opts.goal); wins += +r.won; loss.add(r.loss); wear.add(r.wear); kos.add(r.kos);
+          const r = trial(s, true,!!opts.goal,opts.goal); wins += +r.won; loss.add(r.loss); wear.add(r.wear); kos.add(r.kos);
+          for(const node of r.visited)reached.set(node,(reached.get(node)||0)+1);
           for(const item of r.threats){const key=`${item.node}:${item.id??'status'}`,old=threats.get(key);if(old){old.wear+=item.wear;old.kos+=item.kos;old.samples++;}else threats.set(key,{...item});}
           if(r.failure){const key=`${r.failure.node}:${r.failure.id??'status'}`,old=failures.get(key);if(old)old.count++;else failures.set(key,{...r.failure});}
         }
         const win = wilson(wins, opts.trials), damage = loss.interval([0, 1]);
         const route = { order, autoSwitch, trials: opts.trials, win, loss: damage, wear: wear.interval([0, Infinity]), kos: kos.interval([0, Infinity]),
           qualified: qualifies(win, damage, opts.minWin, opts.maxLoss), baseline: autoSwitch === catalog.autoSwitch && JSON.stringify(order) === JSON.stringify(selected),
-          threats:[...threats.values()].map(t=>({...t,wear:t.wear/opts.trials,kos:t.kos/opts.trials})).sort((a,b)=>b.wear-a.wear),failures:[...failures.values()].sort((a,b)=>b.count-a.count) };
+          threats:[...threats.values()].map(t=>({...t,wear:t.wear/opts.trials,kos:t.kos/opts.trials})).sort((a,b)=>b.wear-a.wear),failures:[...failures.values()].sort((a,b)=>b.count-a.count),reachedNodes:[...reached].map(([node,trials])=>({node,trials})) };
         report.routes.push(route); progress(++completed, total, undefined, route); await new Promise(resolve => setTimeout(resolve, 0));
       }
       report.catalog=copy(catalog);return report;

@@ -7,10 +7,12 @@ import { mapRate } from '../modules/farming';
 import { duration, number } from '../core/format';
 import { chapterLabel } from '../core/chapters';
 import Forecast from './Forecast.vue';
+import NodeExperience from './NodeExperience.vue';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const s = r.farming.state, handle = ref<HTMLElement>(), { width, height } = useWindowSize();
 const saved = r.store.get<{ x: number; y: number } | null>('farmingPosition', null);
-const view = ref(r.store.get<string>('farmingView', 'forecast') === 'observed' ? 'observed' : 'forecast');
+const savedView=r.store.get<string>('farmingView','forecast');
+const view = ref(['forecast','observed','nodes'].includes(savedView)?savedView:'forecast');
 watch(view, value => r.store.set('farmingView', value));
 const { x, y } = useDraggable(handle, { initialValue: saved || { x: 16, y: 100 }, preventDefault: true,
   onEnd(p) { r.store.set('farmingPosition', p); } });
@@ -46,8 +48,9 @@ function exportRecords() {
   <aside v-if="r.settings.farmingVisible" class="farming-window" :style="style" aria-label="刷图经验浮窗" data-testid="farming-window">
     <header class="farming-header"><div ref="handle" class="farming-drag" title="拖动移动浮窗"><strong>刷图经验</strong><small>{{ current ? name(current.name) : '等待普通冒险' }}</small></div><div class="actions"><NButton size="tiny" quaternary aria-label="折叠刷图浮窗" @click="toggle">{{ folded ? '＋' : '－' }}</NButton><NButton size="tiny" quaternary aria-label="关闭刷图浮窗" @click="r.settings.farmingVisible = false">×</NButton></div></header>
     <div v-if="!folded" class="farming-content">
-      <div class="actions"><NButton size="small" :type="view === 'forecast' ? 'primary' : 'default'" :aria-pressed="view === 'forecast'" @click="view = 'forecast'">模拟选图</NButton><NButton size="small" :type="view === 'observed' ? 'primary' : 'default'" :aria-pressed="view === 'observed'" @click="view = 'observed'">实测记录</NButton></div>
+      <div class="actions"><NButton size="small" :type="view === 'forecast' ? 'primary' : 'default'" :aria-pressed="view === 'forecast'" @click="view = 'forecast'">模拟选图</NButton><NButton size="small" :type="view==='nodes'?'primary':'default'" :aria-pressed="view==='nodes'" @click="view='nodes'">本图节点</NButton><NButton size="small" :type="view === 'observed' ? 'primary' : 'default'" :aria-pressed="view === 'observed'" @click="view = 'observed'">实测记录</NButton></div>
       <Forecast v-if="view === 'forecast'" :runtime="r" />
+      <NodeExperience v-else-if="view==='nodes'" :runtime="r" />
       <template v-else>
       <div class="split"><small>{{ s.currentNode || '按整章地图累计，多轮合并' }}</small><NTag size="small" :type="r.settings.farming ? 'success' : 'warning'">{{ r.settings.farming ? '实测' : '已关闭' }}</NTag></div>
       <NSelect :value="s.selected" :options="options" :to="false" size="small" aria-label="经验比较对象" style="margin-top:12px" @update:value="r.farming.select($event)" />

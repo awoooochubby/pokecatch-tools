@@ -16,6 +16,7 @@ export function createRuntime() {
   const counters = createCounters(game);
   const farming = createFarming(game, store);
   const forecast = createForecastModule(game);
+  const nodeExperience=createForecastModule(game);
   const modules: Record<'experience' | 'enemies' | 'farming', FeatureModule> = { experience, enemies, farming };
   function setEnabled(id: 'experience' | 'enemies' | 'farming', enabled: boolean) {
     settings[id] = enabled;
@@ -27,9 +28,9 @@ export function createRuntime() {
   game.start();
   const flush = () => { experience.persist(); farming.persist(); };
   window.addEventListener('pagehide', flush);
-  return { store, game, settings, status, experience, enemies, counters, farming, forecast, setEnabled,
+  return { store, game, settings, status, experience, enemies, counters, farming, forecast, nodeExperience, setEnabled,
     saveSettings() { store.set('settings', settings); },
-    dispose() { experience.stop(); enemies.stop(); farming.stop(); forecast.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
+    dispose() { experience.stop(); enemies.stop(); farming.stop(); forecast.dispose();nodeExperience.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
   };
 }
 export type Runtime = ReturnType<typeof createRuntime>;

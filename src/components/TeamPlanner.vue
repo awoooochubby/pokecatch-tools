@@ -6,20 +6,21 @@ import type {TeamPlan} from '../simulation/types';
 import {pokemonName} from '../core/pokemon';
 import {chapterLabel} from '../core/chapters';
 const {runtime:r}=defineProps<{runtime:Runtime}>(),s=r.counters.state;
-const prefs=r.store.get<{signature?:string;node?:number;objective?:string}>('teamPlanPreferences',{});
+const prefs=r.store.get<{signature?:string;node?:number;objective?:string;goalKey?:string;dungeonId?:string}>('teamPlanPreferences',{});
 const node=ref<number|null>(null),objective=ref<'reach'|'clear'>(prefs.objective==='reach'?'reach':'clear'),heading=ref<HTMLElement>();
-const signature=computed(()=>JSON.stringify([s.catalog?.chapterIndex,s.catalog?.nodes]));
+const signature=computed(()=>JSON.stringify([s.catalog?.dungeon?.id,s.catalog?.nodes]));
 watch(signature,()=>{
   const nodes=s.catalog?.nodes||[];
+  const stored=r.store.get<typeof prefs>('teamPlanPreferences',prefs);
+  const goalKey=stored.dungeonId===s.catalog?.dungeon?.id?stored.goalKey:undefined;
+  if(goalKey&&nodes.some(n=>n.key===goalKey)){node.value=nodes.find(n=>n.key===goalKey)!.index;return;}
   if(signature.value===prefs.signature&&nodes.some(n=>n.index===prefs.node)){node.value=prefs.node!;return;}
-  const current=s.catalog?.nodeIndex||0;
-  const battle=nodes.find(n=>n.index>=current&&['wild','trainer','gym','static'].includes(n.type));
-  node.value=nodes.find(n=>n.type==='heal'&&n.index>(battle?.index??current))?.index??nodes.at(-1)?.index??null;
+  node.value=nodes.at(-1)?.index??null;
 },{immediate:true});
-watch([node,objective],()=>r.store.set('teamPlanPreferences',{signature:signature.value,node:node.value,objective:objective.value}));
+watch([node,objective],()=>r.store.set('teamPlanPreferences',{signature:signature.value,node:node.value,objective:objective.value,goalKey:s.catalog?.nodes?.find(n=>n.index===node.value)?.key,dungeonId:s.catalog?.dungeon?.id}));
 watch(()=>s.phase,async phase=>{if(phase==='配队完成'){await nextTick();heading.value?.scrollIntoView({block:'start',behavior:'smooth'});}});
-const kinds:Record<string,string>={heal:'宝可梦中心',wild:'野怪路段',trainer:'训练家',gym:'首领',static:'固定遭遇',gift:'赠送',item:'道具',berry:'治疗树果'};
-const goals=computed(()=>(s.catalog?.nodes||[]).map(n=>({value:n.index,label:`第 ${n.index+1} 处 · ${chapterLabel(n.name)} · ${kinds[n.type]||'事件'}`})));
+const kinds:Record<string,string>={heal:'宝可梦中心',transition:'阶段交接治疗',wild:'野怪路段',trainer:'训练家',gym:'首领',static:'固定遭遇',gift:'赠送',item:'道具',berry:'治疗树果'};
+const goals=computed(()=>(s.catalog?.nodes||[]).map(n=>({value:n.index,label:`${(s.catalog?.dungeon?.chapters.length||0)>1?chapterLabel(n.stageName)+' · ':''}第 ${n.index+1} 处 · ${chapterLabel(n.name)} · ${kinds[n.type]||'事件'}`})));
 const report=computed(()=>s.planReport);
 const showAlternatives=ref(false);
 const visiblePlans=computed(()=>report.value?.plans.slice(0,showAlternatives.value?3:1)||[]);
@@ -38,12 +39,12 @@ function exportPlan(){if(!report.value)return;const url=URL.createObjectURL(new 
 <template>
   <div class="section-card goal-planner" data-testid="team-planner">
     <h3>指定目标，少换人、少练级</h3>
-    <p class="hint">按本次保存的路线，从本章开头满血出发，找一支比较好用的队伍。先试原队伍，再考虑换位、练级和最多两名替补。</p>
+    <p class="hint">从副本入口满血出发，连续计算目标之前的全部道中、训练家和首领。联盟包含四天王到冠军的完整流程；过阶段只更新进度，目标保持不变。</p>
     <NSelect v-model:value="node" :options="goals" :to="false" :disabled="s.busy" aria-label="配队目标节点" data-testid="plan-goal" />
     <NSelect v-model:value="objective" :options="[{label:'打完该节点（若为中心，包含治疗）',value:'clear'},{label:'到达该节点前停下',value:'reach'}]" :to="false" :disabled="s.busy" aria-label="配队目标条件" style="margin:10px 0" />
     <p class="hint">{{ objective==='clear'?'会打完所选位置，再检查队伍是否撑住。':'只检查走到所选位置前，尚未打该处敌人，也未使用该处中心。' }}练级时间会模拟候选队伍实际刷图，保留当前伙伴与经验加成。</p>
     <NButton block type="primary" secondary :disabled="s.busy||node===null" data-testid="run-team-plan" @click="submit">为这个目标找一个实用配队</NButton>
-    <p class="hint">计算时会自动更新已过期的队伍快照；如果章节或整轮路线已改变，会请你重选目标。</p>
+    <p class="hint">默认目标是通关整个副本，也可指定中间位置。计算时更新队伍状态，同一副本内保留目标；不会因进入下一位四天王而重选。</p>
     <p class="hint">默认取舍：达到通过率要求后，比较“练级分钟 + 换入人数 × 20 + 换位成本 1”。因此愿意多练一点来少换人，也不会为了保留原队而无限练级。</p>
     <template v-if="report">
       <h3 ref="heading">{{ report.plans.some(p=>safe(p)&&p.score!==null)?'建议这样准备后再出发':'这次还没有找到能完整确认的方案' }}</h3>
@@ -58,6 +59,7 @@ function exportPlan(){if(!report.value)return;const url=URL.createObjectURL(new 
         <p v-else-if="plan.trainingSeconds"><strong>全队一起练，预计 {{ duration(plan.trainingSeconds.mean) }}</strong><br>刷 {{ chapterLabel(plan.trainingMap||'') }}；均值估计区间 {{ duration(plan.trainingSeconds.low) }}–{{ duration(plan.trainingSeconds.high) }}。<span v-for="(xp,uid) in plan.xp" :key="uid"><template v-if="xp"><br>{{ name(String(uid)) }} 还需 {{ xp.toLocaleString() }} XP。</template></span></p>
         <NAlert v-else type="warning" :show-icon="false">目标战斗已验证，但练级地图存在人工选择、超时或不可用，暂时无法估计配置成本。不要把这个方案当成最快准备方案。</NAlert>
         <p>目标通过 {{ pct(plan.route.win.mean) }}（95% 区间 {{ pct(plan.route.win.low) }}–{{ pct(plan.route.win.high) }}，独立复核 {{ plan.route.trials }} 次）。平均倒下 {{ plan.route.kos.mean.toFixed(2) }} 次，累计承伤相当于队伍总 HP 的 {{ pct(plan.route.wear.mean) }}。</p>
+        <p v-if="plan.route.reachedNodes" class="hint">模拟实际覆盖 {{ plan.route.reachedNodes.length }} 处道中／首领／治疗节点；此前战损与状态会连续带到后续战斗，仅在原生治疗节点／过场回血。</p>
         <p v-if="plan.score!==null" class="hint">配置成本 {{ plan.score.toFixed(1) }} 分：练级 {{ ((plan.trainingSeconds?.mean||0)/60).toFixed(1) }} + 换入 {{ plan.added.length*20 }} + 换位 {{ plan.reordered?1:0 }}。换入权重是便利性偏好，不是实际耗时。</p>
         <NCollapse v-if="plan.training.length"><NCollapseItem title="练级地图与未完成原因" :name="index"><p v-for="map in plan.training" :key="map.chapter" class="hint">{{ chapterLabel(map.name) }}：{{ map.seconds?duration(map.seconds.mean):map.error||`两小时内完成 ${map.completed}/${map.trials} 次，无法可靠估时` }}。</p></NCollapseItem></NCollapse>
       </div>

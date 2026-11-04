@@ -54,7 +54,7 @@ integration('audited current game engine', () => {
     t.Game.sandbox(s,()=>{t.Adventure.buildChapter(60);t.Adventure.step();t.Adventure.step();hp=t.Game.curHp(s.adv.battle.enemies[0]);});
     const saved=JSON.parse(JSON.stringify(s));saved.adv.battle=null;saved.adv.node=0;
     const engine=await createSimulator(source,JSON.stringify(saved),now);
-    expect(engine.catalog.chapterIndex).toBe(60);expect(engine.catalog.targets.filter(t=>t.source==='trainer')).toHaveLength(10);
+    expect(engine.catalog.chapterIndex).toBe(60);expect(engine.catalog.targets.filter(t=>t.source==='trainer'&&t.chapterIndex===60)).toHaveLength(10);
     const target=engine.catalog.targets.find(t=>t.source==='trainer'&&t.id===279)!;
     expect(target.level).toBe(74);
     const report=await engine.run(options({targetKeys:[target.key]}),()=>{});expect(report.results[0].facts.enemyHp).toBe(hp);
