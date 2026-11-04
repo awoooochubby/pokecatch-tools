@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PokeCatch 敌情与伤害排行
 // @namespace    local.pokecatch.enemies
-// @version      1.1.0
+// @version      1.2.0
 // @updateURL    https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-enemies.meta.js
 // @downloadURL  https://raw.githubusercontent.com/awoooochubby/pokecatch-tools/main/pokecatch-enemies.user.js
 // @match        https://pokecatch-online.netlify.app/*
@@ -18,81 +18,185 @@
   const KEY='pc-enemies-stages-v2',esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let maps={};try{maps=JSON.parse(localStorage.getItem(KEY))||{};}catch{}
   let checkpoint=null;try{checkpoint=JSON.parse(localStorage.getItem(KEY+'-checkpoint'));}catch{}
-  function stageFor(a,prior) {
-    const nodes=a.nodes||[],position=Number(a.node)||0;
-    const mode=JSON.stringify([a.event?.id||null,a.zone?.id||null,!!a.tower]);
-    const heals=nodes.map((n,i)=>({n,i})).filter(x=>x.n.type==='heal');
-    const passed=heals.filter(x=>x.i<position),last=passed.at(-1),next=heals.find(x=>x.i>=position);
-    if(last){
-      const name=last.n.name||'宝可梦中心';
-      return {key:JSON.stringify(['center',mode,a.chapter,passed.length-1,name]),mode,name:name+' → '+(next?.n.name||'下一个宝可梦中心')};
-    }
-    // A chapter or scenery change without a healing node is not a stage boundary.
-    if(prior?.mode===mode)return prior;
-    return {key:JSON.stringify(['before-first-center',mode,a.chapter]),mode,name:'途中接入 → '+(next?.n.name||'下一个宝可梦中心')};
+  const HISTORY_KEY='pc-enemies-center-history';
+  const newStage=name=>({name,rows:{},unknown:0,battles:[]});
+  let history;
+  try{history=JSON.parse(localStorage.getItem(HISTORY_KEY));}catch{}
+  if(!history?.current){
+    const old=maps[checkpoint?.key];
+    history={current:{...newStage('当前路段 · 等待宝可梦中心'),rows:old?.rows||{},unknown:old?.unknown||0},previous:null};
   }
-  let mapKey='',mapName='',enemies=[],selected=null,pinned=false,attack=null,lastBattle='',dirty=false;
+  for(const entry of history.current.battles)if(!entry.result)entry.result='记录中断';
+  let enemies=[],selected=null,pinned=false,attack=null,battle=null,dirty=false,previous=false;
+  let centerVisit=null;
+  const hits=new Map();
+  let battleMarkup='';
   const seen=new WeakSet();
   const host=document.createElement('div');host.id='pc-enemies';Object.assign(host.style,{position:'fixed',left:'16px',top:'90px',width:'350px',maxWidth:'calc(100vw - 16px)',zIndex:2147483646});document.body.append(host);
   const root=host.attachShadow({mode:'open'});
   root.innerHTML=`<style>:host{font:13px/1.6 system-ui;color:#e6edf8}*{box-sizing:border-box}section{background:#151c2b;border:1px solid #40516a;border-radius:14px;box-shadow:0 12px 36px #0007;overflow:hidden}header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:grab;touch-action:none;user-select:none}main{padding:0 16px 16px;max-height:75vh;overflow:auto}button,select{font:inherit;color:inherit;background:#26344c;border:1px solid #485b79;border-radius:7px;padding:5px 8px;cursor:pointer}small{color:#9baec8}h3{margin:12px 0 6px;font-size:14px}.chips{display:flex;flex-wrap:wrap;gap:5px}.chip{background:#25334b;padding:3px 7px;border-radius:5px}.weak{color:#ffc591}.resist{color:#8fe1bc}.immune{color:#b8a7ff}.row{display:flex;justify-content:space-between;width:100%;margin:6px 0;text-align:left}.row b{color:#ffb38c}.bar{height:3px;background:#fa9b77;border-radius:3px;margin-bottom:8px}.tools{display:flex;gap:6px;margin:10px 0}#current{display:flex;gap:5px;flex-wrap:wrap}#status{display:block;margin-top:10px}</style><section><header><b>敌情 · 伤害排行</b><button id="fold">收起</button></header><main><small id="place"></small><h3>当前敌人</h3><div id="current"></div><div class="tools"><button id="follow">跟随战斗</button></div><div id="types"></div><h3>本阶段受到的伤害</h3><small>两个宝可梦中心之间累计 · 点击查看抗性</small><div id="ranks"></div><small id="status"></small><div class="tools"><button id="clear">清空本阶段</button></div></main></section>`;
   const $=s=>root.querySelector(s),info=id=>DATA.dex[id],name=id=>info(id)?.name||`精灵 #${id}`;
+  $('#ranks').before(document.createRange().createContextualFragment('<div class="tools"><button id="now">本段</button><button id="previous">上一段</button></div>'));
+  $('#status').after(document.createRange().createContextualFragment('<h3>最近战斗与击倒</h3><div id="battles"></div>'));
+  $('#now').onclick=()=>{previous=false;render();};
+  $('#previous').onclick=()=>{previous=true;render();};
   const multipliers=types=>Object.keys(TYPES).map(t=>[t,Math.min(4,types.reduce((v,d)=>v*(DATA.chart[t]?.[d]??1),1))]);
-  function save(){if(!dirty)return;try{localStorage.setItem(KEY,JSON.stringify(maps));dirty=false;}catch{$('#status').textContent='本地存储已满';}}
+  function save(){if(!dirty)return;try{localStorage.setItem(HISTORY_KEY,JSON.stringify(history));dirty=false;}catch{$('#status').textContent='本地存储已满';}}
   function state(){try{return JSON.parse(localStorage.getItem('gachamon-save-v1'));}catch{return null;}}
   function sync(){
     const s=state(),a=s?.adv;if(!a)return;
-    const stage=stageFor(a,checkpoint),key=stage.key,label=stage.name;
-    if(checkpoint?.key!==key||checkpoint?.name!==label){checkpoint=stage;try{localStorage.setItem(KEY+'-checkpoint',JSON.stringify(checkpoint));}catch{}}
-    const battle=String(s.stats?.battles??'');
-    if(battle!==lastBattle){attack=null;lastBattle=battle;}
-    if(key!==mapKey){mapKey=key;mapName=label;attack=null;pinned=false;selected=null;}
-    maps[key]??={name:label,rows:{},unknown:0};
     enemies=(a.battle?.enemies||[]).filter(e=>document.querySelectorAll('#enemy-slot .enemy[data-uid]').length?[...document.querySelectorAll('#enemy-slot .enemy[data-uid]')].some(n=>n.dataset.uid===String(e.uid)):e.hp>0);
     if(!pinned)selected=enemies[0]?.id??null;
   }
   function render(){
-    $('#place').textContent=mapName||'等待进入阶段…';
+    const m=previous?history.previous:history.current;
+    $('#place').textContent=m?.name||'还没有上一段记录';
+    $('#now').setAttribute('aria-pressed',String(!previous));
+    $('#previous').setAttribute('aria-pressed',String(previous));
+    $('#clear').disabled=previous;
     $('#current').innerHTML=enemies.length?enemies.map(e=>`<button data-id="${e.id}">${esc(name(e.id))}</button>`).join(''):'<small>等待战斗</small>';
     const mon=info(selected);
     $('#types').innerHTML=mon?`<h3>${esc(mon.name)} <small>${mon.types.map(t=>TYPES[t]).join(' / ')}</small></h3><small>受到各属性攻击时的倍率</small>`+[4,2,.5,.25,0,1].map(v=>{const ts=multipliers(mon.types).filter(([,n])=>n===v);return ts.length?`<p class="chips ${v>1?'weak':v===0?'immune':v<1?'resist':''}"><b>×${v}</b> ${ts.map(([t])=>`<span class="chip">${TYPES[t]}</span>`).join('')}</p>`:'';}).join(''):'<small>选择一个敌人查看抗性</small>';
-    const m=maps[mapKey],rows=Object.entries(m?.rows||{}).sort((a,b)=>b[1].damage-a[1].damage),max=rows[0]?.[1].damage||1;
+    const rows=Object.entries(m?.rows||{}).sort((a,b)=>b[1].damage-a[1].damage),max=rows[0]?.[1].damage||1;
     $('#ranks').innerHTML=rows.length?rows.map(([id,r],i)=>`<button class="row" data-id="${id}"><span>${i+1}. ${esc(name(id))}</span><b>${r.damage.toLocaleString()}</b></button><div class="bar" style="width:${r.damage/max*100}%"></div>`).join(''):'<p><small>记录到敌方伤害后显示排名</small></p>';
     $('#status').textContent=`直接伤害飘字合计（含溢出伤害）${m?.unknown?' · 未归属 '+m.unknown:''}`;
+    const battleList=m?.battles||[];
+    const markup=battleList.length?battleList.slice().reverse().map(b=>`<details data-battle="${b.at}"><summary><b>${esc(b.result||'进行中')}</b> · ${esc(b.foes.map(name).join('、')||'敌人未识别')}${b.kos.length?' · '+esc(b.kos.at(-1).victim)+'倒下':''}</summary>${b.kos.map(k=>`<div><b>${esc(k.victim)}倒下</b> · ${esc(k.cause)}${k.damage?' · −'+k.damage:''}</div>`).join('')}${(b.lines||[]).map(line=>`<div><small>${esc(line)}</small></div>`).join('')}</details>`).join(''):'<small>尚无战斗记录</small>';
+    if(markup!==battleMarkup){
+      const open=new Set([...$('#battles').querySelectorAll('details[open]')].map(el=>el.dataset.battle));
+      $('#battles').innerHTML=battleMarkup=markup;
+      for(const el of $('#battles').querySelectorAll('details'))el.open=open.has(el.dataset.battle);
+    }
   }
   root.addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b){selected=Number(b.dataset.id);pinned=true;render();}});
   $('#follow').onclick=()=>{pinned=false;sync();render();};
-  $('#clear').onclick=()=>{if(mapKey){maps[mapKey]={name:mapName,rows:{},unknown:0};dirty=true;save();render();}};
+  $('#clear').onclick=()=>{if(!previous){history.current.rows={};history.current.unknown=0;dirty=true;save();render();}};
   $('#fold').onclick=()=>{$('main').hidden=!$('main').hidden;$('#fold').textContent=$('main').hidden?'展开':'收起';};
   let drag=null;
   $('header').onpointerdown=e=>{if(e.button!==0||e.target.closest('button'))return;const r=host.getBoundingClientRect();drag={x:e.clientX-r.left,y:e.clientY-r.top};e.currentTarget.setPointerCapture(e.pointerId);};
   $('header').onpointermove=e=>{if(!drag)return;host.style.left=Math.max(0,Math.min(innerWidth-host.offsetWidth,e.clientX-drag.x))+'px';host.style.top=Math.max(0,Math.min(innerHeight-50,e.clientY-drag.y))+'px';};
   $('header').onpointerup=$('header').onpointercancel=()=>drag=null;
-  function readAttack(){
-    const log=document.querySelector('#battle-log'),text=log?.textContent||'';
-    // A fresh attack line is required; status damage and stale turns are never assigned.
-    if(!/使用|使出|utilise|uses?\b|used\b/i.test(text)){attack=null;return;}
-    const bold=[...log.querySelectorAll('b')].map(n=>n.textContent.trim());
-    const first=bold[0]||'',prefix=text.split(first)[0];
-    const candidates=enemies.filter(e=>{const d=info(e.id);return d&&[d.name,d.fr,d.key].some(n=>first.includes(n)||prefix.includes(n));});
-    const allies=[...document.querySelectorAll('#team-rail .tr-row.acting')];
-    attack=candidates.length===1&&!allies.length?{id:candidates[0].id,map:mapKey,at:Date.now()}:null;
+  const speciesNames=Object.entries(DATA.dex).flatMap(([id,d])=>[
+    [d.name,+id],[d.fr,+id],[d.key.replaceAll('-',' '),+id]
+  ]).sort((a,b)=>b[0].length-a[0].length);
+  const species=text=>speciesNames.find(([n])=>text.toLowerCase().includes(n.toLowerCase()))?.[1];
+  const normalize=text=>text.trim().toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+  function allyName(node){
+    const row=[...document.querySelectorAll('#team-rail .tr-row[data-uid]')].find(r=>r.dataset.uid===node.dataset.uid);
+    return row?.title.split('—')[0].trim()||'';
+  }
+  function startBattle(){
+    finishBattle('已结束');
+    centerVisit=null;
+    battle={at:Date.now(),foes:[],kos:[],lines:[],result:null};
+    history.current.battles.push(battle);
+    history.current.battles=history.current.battles.slice(-50);
+    dirty=true;
+    return battle;
+  }
+  function finishBattle(result){
+    if(battle){battle.result=result;dirty=true;}
+    battle=null;attack=null;hits.clear();
+  }
+  function visitCenter(label){
+    label=label.trim()||'宝可梦中心';
+    if(centerVisit===label)return;
+    centerVisit=label;
+    finishBattle('已结束');
+    const current=history.current;
+    if(current.battles.length||Object.keys(current.rows).length||current.unknown){
+      current.end=label;
+      history.previous=current;
+    }
+    history.current=newStage(label);
+    dirty=true;save();
+  }
+  function readLog(text){
+    if(!text)return;
+    if(/^(?:Centre Pokémon(?: de .+)?|.*宝可梦中心|Pokémon Center(?: .+)?)$|：你的队伍已恢复健康| : ton équipe est soignée|your team (?:was|is) healed/i.test(text)){
+      visitCenter(text.replace(/(?:\s*[：:]\s*(?:你的队伍已恢复健康|ton équipe est soignée|your team.*)).*$/i,''));
+      return;
+    }
+    if(/野生的.+出现了|发起了对战|sauvage apparaît|veut se battre|wild .+ appeared|wants to battle/i.test(text)){
+      const b=startBattle(),id=species(text);
+      if(id)b.foes.push(id);
+      return;
+    }
+    const use=/(使出(?:了)?|使用(?:了)?|\sutilise\s|\suses?\s|\sused\s)/i.exec(text);
+    if(use){
+      const prefix=text.slice(0,use.index),id=species(prefix);
+      const hostile=/野生|敌方|对方|对手|敌人|sauvage|ennemi|\bwild\b|\bfoe\b|\benemy\b/i.test(prefix);
+      if(!battle)startBattle();
+      hits.clear();
+      attack=hostile&&id?{id,move:text.slice(use.index+use[0].length).split(/[！!。]/)[0].trim()}:null;
+      if(attack&&!battle.foes.includes(id))battle.foes.push(id);
+      addBattleLine(text);
+      dirty=true;
+      return;
+    }
+    if(/倒下了|est K\.O\.|\bfainted\b/i.test(text)&&battle){
+      const victim=text.split(/倒下了|\sest K\.O\.|\sfainted/i)[0].trim();
+      const key=normalize(victim),hit=hits.get(key);
+      const enemyKo=[...document.querySelectorAll('#enemy-slot .enemy.ko')].some(node=>enemies.some(e=>String(e.uid)===node.dataset.uid&&e.id===species(victim)));
+      if(hit||!enemyKo&&[...document.querySelectorAll('#team-rail .tr-row')].some(r=>normalize(r.title.split('—')[0])===key)){
+        battle.kos.push({victim,cause:hit?.cause||'来源未识别',damage:hit?.damage||0});
+        hits.delete(key);dirty=true;save();
+      }
+    }else if(/已捕获|est capturé|was caught/i.test(text))finishBattle('捕获');
+    else if(/中毒.*(?:伤害|受伤)|灼伤.*(?:伤害|受伤)|混乱.*伤|souffre|se blesse|hurt by/i.test(text))attack=null;
+  }
+  function addBattleLine(text){
+    if(!battle)return;
+    battle.lines.push(text);
+    if(battle.lines.length>32)battle.lines.shift();
+    dirty=true;
   }
   function damage(el){
     if(seen.has(el)||!el.closest('#arena-fx'))return;seen.add(el);
-    if(el.classList.contains('st-float')||el.classList.contains('heal'))return;
+    if(el.classList.contains('heal'))return;
     const match=/^[−-](\d[\d\s,.]*)(!)?$/.exec(el.textContent.trim());if(!match)return;
     const value=Number(match[1].replace(/[\s,.]/g,''));if(!(value>0))return;
-    const x=parseFloat(el.style.left),arena=document.querySelector('#arena');if(!arena||!Number.isFinite(x))return;
-    const origin=arena.getBoundingClientRect().left;
-    const distances=selector=>[...document.querySelectorAll(selector)].map(n=>{const r=(n.querySelector('.wrap > img')||n).getBoundingClientRect();return Math.abs(r.left+r.width/2-origin-x);});
-    const ally=Math.min(...distances('#ally-slots .ally')),enemy=Math.min(...distances('#enemy-slot .enemy'));
-    if(!(ally+20<enemy&&ally<100))return;
-    const m=maps[mapKey];if(!m)return;
-    if(attack&&attack.map===mapKey&&Date.now()-attack.at<15000){const r=m.rows[attack.id]??={damage:0,hits:0};r.damage+=value;r.hits++;}else m.unknown+=value;
-    dirty=true;render();
+    const x=parseFloat(el.style.left),y=parseFloat(el.style.top),arena=document.querySelector('#arena');
+    if(!arena||!Number.isFinite(x)||!Number.isFinite(y))return;
+    const origin=arena.getBoundingClientRect();
+    const nearest=[...document.querySelectorAll('#ally-slots .ally[data-uid],#enemy-slot .enemy[data-uid]')].map(node=>{
+      const r=(node.querySelector('.wrap > img')||node).getBoundingClientRect();
+      return {node,distance:Math.hypot(r.left+r.width/2-origin.left-x,r.top+r.height/2-origin.top-y-50)};
+    }).sort((a,b)=>a.distance-b.distance)[0];
+    if(!nearest?.node.classList.contains('ally')||nearest.distance>110)return;
+    const status=el.classList.contains('st-float'),victim=normalize(allyName(nearest.node));
+    if(!battle)startBattle();
+    const cause=status?'状态伤害':attack?name(attack.id)+(attack.move?' · '+attack.move:''):'来源未识别';
+    const last=hits.get(victim);
+    if(victim)hits.set(victim,{cause,damage:(last?.cause===cause?last.damage:0)+value});
+    addBattleLine((allyName(nearest.node)||'我方')+'受到 '+value+' 伤害 · '+cause);
+    if(!status){
+      const m=history.current;
+      if(attack){const r=m.rows[attack.id]??={damage:0,hits:0};r.damage+=value;r.hits++;}
+      else m.unknown+=value;
+    }
+    dirty=true;
   }
-  const observer=new MutationObserver(records=>{for(const r of records){if(r.target.id==='battle-log'||r.target.parentElement?.closest('#battle-log')){sync();readAttack();}for(const n of r.addedNodes){if(n.nodeType!==1)continue;if(n.matches('.dmg'))damage(n);n.querySelectorAll('.dmg').forEach(damage);}}});
+  const observer=new MutationObserver(records=>{
+    let changed=false;
+    for(const r of records){
+      const target=r.target.nodeType===1?r.target:r.target.parentElement;
+      if(target?.id==='battle-log'&&r.addedNodes.length){
+        sync();readLog([...r.addedNodes].map(n=>n.textContent).join('').trim());changed=true;
+      }
+      for(const n of r.addedNodes){
+        if(n.nodeType!==1)continue;
+        if(n.matches('.defeat-screen')&&n.closest('#arena')){
+          if(!battle)startBattle();
+          finishBattle(/僵局|bloqué|stalemate|stalled/i.test(n.textContent)?'战斗僵局':'全队倒下');save();changed=true;
+        }
+        if(n.matches('.heal-fx')&&n.closest('#arena')){visitCenter(n.querySelector('.hm-title')?.textContent||'宝可梦中心');changed=true;}
+        if(n.matches('.dmg')){damage(n);changed=true;}
+        if(n.closest('#arena-fx'))n.querySelectorAll('.dmg').forEach(damage);
+      }
+    }
+    if(changed)render();
+  });
   observer.observe(document.body,{childList:true,subtree:true,characterData:true});
   sync();render();setInterval(()=>{sync();render();save();},1000);window.addEventListener('pagehide',save);
 })();
