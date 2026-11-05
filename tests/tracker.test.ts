@@ -105,12 +105,12 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生引擎追踪条件', () 
     expect(c.targets.some(t => t.id === 150 && t.kind === 'zone')).toBe(true);
     expect(wx.every(t => t.destinations.every(d => d.chance! > 0 && !!d.weather && d.habitats!.length > 0))).toBe(true);
   });
-  it('地区限制和神兽独立队伍会阻止悄悄更换已配置队伍', () => {
+  it('保留地区限制，允许沿用不同的神兽独立队伍', () => {
     const s = structuredClone(save); s.link = { to: 'sinnoh', from: 'kanto', side: 'to', stash: { team: [] } };
     expect(read(JSON.stringify(s), now).targets.find(t => t.id === 243)!.destinations).toEqual([]);
     const z = structuredClone(save); z.mons.push({ id: 143, uid: 'b', level: 100, xp: 0, reg: 'sinnoh' });
     z.eventTeams = { 'zone:150': ['b'] };
-    expect(read(JSON.stringify(z), now).targets.find(t => t.id === 150)).toMatchObject({ destinations: [], status: '该神兽有独立队伍，请先与当前队伍对齐' });
+    expect(read(JSON.stringify(z), now).targets.find(t => t.id === 150)).toMatchObject({ destinations: [{ zone: 150 }], status: '可挑战' });
   });
   it('包含天气限定的定点形态，保留原生前置捕获和一次性条件', () => {
     const s = structuredClone(save); s.dex[479] = { caught: 1 };

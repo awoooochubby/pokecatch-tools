@@ -70,6 +70,11 @@ try {
   const configured = await page.locator('#pc-tools .hunt-target').allTextContents();
   assert.match(configured[2], /快龙/); assert.match(configured[4], /暴鲤龙/);
   assert.equal(await page.evaluate(() => localStorage.getItem('gachamon-save-v1')), raw);
+  await page.getByTestId('raid-optimize-kanto').click();
+  await page.getByTestId('raid-phase').filter({ hasText: '搜索完成' }).waitFor({ timeout: 180000 });
+  assert.match(await page.getByTestId('raid-moves').innerText(), /我方.*敌方/);
+  assert.match(await page.getByTestId('raid-moves').innerText(), /平均每次双方出招数 ÷ 成功率/);
+  assert.equal(await page.evaluate(() => localStorage.getItem('gachamon-save-v1')), raw, 'Standalone optimization must not change the real party or enter a raid');
   await page.screenshot({ path: 'test-results/raid.png' });
   await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('gachamon-save-v1')); s.mons[0].rank = 0; localStorage.setItem('gachamon-save-v1', JSON.stringify(s)); });
   await page.getByText('配置或日期已变化，请重新预测').waitFor();

@@ -10,7 +10,8 @@ export function chooseHunt(catalog: HuntCatalog, prefs: TrackerPrefs, current: H
   const pending = prefs.targets.map(id => catalog.targets.find(t => t.id === id)).filter((t): t is HuntTarget => !!t && !t.owned);
   if (!pending.length) return null;
   if (prefs.mode === 'interrupt') {
-    const weather = catalog.targets.filter(t => t.kind === 'weather' && !t.owned && (prefs.weather === null || prefs.weather.includes(t.id)));
+    const weather = catalog.targets.filter(t => !t.owned && (t.kind === 'weather' || t.destinations.some(d => d.weather)) && (prefs.weather === null || prefs.weather.includes(t.id)))
+      .map(t => ({ ...t, destinations: t.destinations.filter(d => d.weather || t.kind === 'weather') }));
     const sticky = weather.find(t => current?.interrupt && t.id === current.id);
     if (sticky) { const next = job(sticky, catalog, true, current); if (next) return next; }
     const available = weather.flatMap(t => { const next = job(t, catalog, true, current); return next ? [next] : []; });
@@ -25,7 +26,7 @@ export function chooseHunt(catalog: HuntCatalog, prefs: TrackerPrefs, current: H
   return null;
 }
 export function needsReentry(job: HuntJob, adv: Record<string, any>): boolean {
-  if (job.kind === 'zone' || adv.chapter !== job.destination.chapter) return false;
+  if (job.kind === 'zone' || job.kind === 'raid' || adv.chapter !== job.destination.chapter) return false;
   const nodes = adv.nodes || [], start = adv.node || 0;
   if (job.kind === 'roaming') return !nodes.slice(start).some((n: any) => n.roamer === job.id);
   if (job.destination.staticId != null) return !nodes.slice(start).some((n: any) => n.type === 'static' && n.id === job.destination.staticId);

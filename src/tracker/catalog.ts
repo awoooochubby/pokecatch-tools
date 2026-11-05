@@ -1,6 +1,6 @@
 import { isolatedEngine, type Vendor } from '../simulation/isolated';
 import { dex } from '../core/pokemon';
-import type { Destination, HuntCatalog, HuntTarget } from './types';
+import type { Destination, HuntCatalog, HuntTarget, TrackerPrefs } from './types';
 import { berryNames } from './berries';
 
 const copy = <T>(x: T): T => JSON.parse(JSON.stringify(x));
@@ -10,7 +10,7 @@ export async function createHuntCatalog(source: string) {
   t.UI = { fmt: (value: number) => String(value) };
   const weatherKeys = new Set(Object.keys(t.CONFIG.WEATHER.TYPES));
   const name = (id: number) => dex[id]?.name || g.DEX[id]?.name || `#${id}`;
-  return (raw: string, now: number): HuntCatalog => {
+  return (raw: string, now: number, prefs?: TrackerPrefs): HuntCatalog => {
     const original = JSON.parse(raw);
     if (!Array.isArray(original.mons) || !Array.isArray(original.team) || !Number.isInteger(original.adv?.chapter)) throw new Error('请先进入冒险并等待游戏保存');
     engine.setTime(now);
@@ -27,15 +27,19 @@ export async function createHuntCatalog(source: string) {
       t.Roaming.at = (ch: number) => t.Roaming.here(ch)?.id ?? null;
       t.Roaming.weatherAt = (ch: number) => t.CONFIG.ROAMING.WEATHER[t.Roaming.at(ch)] || null;
       const team = (s.road?.length ? s.road : s.team).map(String);
-      const blockedRegion = (region: string) => team.some((uid: string) => g.can(s.mons.find((m: Vendor) => String(m.uid) === uid), 'region', region));
+      const blockedRegion = (region: string, id?: number, zone = false) => {
+        const selected = id != null && prefs?.teams?.[id]?.length ? prefs.teams[id]
+          : zone && g.zoneTeam(id).length ? g.zoneTeam(id) : prefs?.defaultTeam?.length ? prefs.defaultTeam : team;
+        return selected.some((uid: string) => { const mon = s.mons.find((m: Vendor) => String(m.uid) === String(uid)); return !mon || g.can(mon, 'region', region) || zone && g.can(mon, 'zone', id); });
+      };
       const destination = (ch: number): Destination => ({ chapter: ch, region: story.regionOf(ch).key, name: story.CHAPTERS[ch].name });
       const targets: HuntTarget[] = [];
       for (const group of t.CONFIG.ROAMING.GROUPS) for (const id of group.ids) {
         const owned = g.owns(id) || !!s.roam?.caught?.includes(id), free = t.Roaming.free(id);
         const pos = positions.find(p => p.id === id), d = pos ? { ...destination(pos.ch), until: pos.until } : null;
         targets.push({ id, name: name(id), kind: 'roaming', owned,
-          status: owned ? '已捕获' : !free ? '尚未解锁游走条件' : !d ? '等待游戏刷新游走位置' : blockedRegion(d.region) ? '当前队伍受地区限制' : '可追踪',
-          destinations: d && !blockedRegion(d.region) && !owned ? [d] : [] });
+          status: owned ? '已捕获' : !free ? '尚未解锁游走条件' : !d ? '等待游戏刷新游走位置' : blockedRegion(d.region, id) ? '所选队伍受地区限制' : '可追踪',
+          destinations: d && !blockedRegion(d.region, id) && !owned ? [d] : [] });
       }
       for (const z of t.LegendZones.ZONES) {
         // Weekly forms, riddles and world bosses require separate interactions.
@@ -43,11 +47,9 @@ export async function createHuntCatalog(source: string) {
         const owned = g.owns(z.id), state = t.LegendZones.state(z);
         const at = t.LegendZones.atChapter(z) ?? story.chaptersOf(z.region).filter((ch: number) => ch <= s.adv.unlocked).at(-1);
         const unlocked = Number.isInteger(at) && story.regionUnlocked(z.region, s.adv);
-        const specialTeam = g.zoneTeam(z.id).map(String);
-        const teamDiffers = specialTeam.length && JSON.stringify(specialTeam) !== JSON.stringify(s.team.map(String));
-        const ready = !owned && state === 'open' && unlocked && !blockedRegion(z.region) && !teamDiffers;
+        const ready = !owned && state === 'open' && unlocked && !blockedRegion(z.region, z.id, true);
         targets.push({ id: z.id, name: name(z.id), kind: 'zone', owned,
-          status: owned ? '已捕获' : teamDiffers ? '该神兽有独立队伍，请先与当前队伍对齐' : !unlocked ? '地点未解锁' : blockedRegion(z.region) ? '当前队伍受地区限制' : state === 'open' ? '可挑战' : state === 'closed' ? '等待时段／月相' : state === 'sealed' ? '需要先手动解谜' : '捕捉条件未满足',
+          status: owned ? '已捕获' : !unlocked ? '地点未解锁' : blockedRegion(z.region, z.id, true) ? '所选队伍受地区／神兽限制' : state === 'open' ? '可挑战' : state === 'closed' ? '等待时段／月相' : state === 'sealed' ? '需要先手动解谜' : '捕捉条件未满足',
           destinations: ready ? [{ ...destination(at), zone: z.id, name: z.zone }] : [] });
       }
       const weather = new Map<number, HuntTarget>();
@@ -58,7 +60,7 @@ export async function createHuntCatalog(source: string) {
       };
       for (let ch = 0; ch <= s.adv.unlocked && ch < story.CHAPTERS.length; ch++) {
         const chapter = story.CHAPTERS[ch], region = story.regionOf(ch).key;
-        if (chapter.league || !story.regionUnlocked(region, s.adv) || blockedRegion(region)) continue;
+        if (chapter.league || !story.regionUnlocked(region, s.adv)) continue;
         const routes = chapter.steps.filter((step: Vendor) => step.kind === 'route');
         for (const [i, step] of routes.entries()) {
           if (!step.wild || step.tide && (step.tide === 'low') !== story.lowTide()) continue;
@@ -68,7 +70,7 @@ export async function createHuntCatalog(source: string) {
           for (const p of a.zonePool(node, ch, true, null, true, false)) {
             if (!p.when?.some((key: string) => weatherKeys.has(key))) continue;
             const target = weatherTarget(p.id);
-            if (target.owned || !p.on || !p.when.includes(currentWeather)) continue;
+            if (target.owned || !p.on || !p.when.includes(currentWeather) || blockedRegion(region, p.id)) continue;
             const change = t.WEATHER.forecast(node, 24);
             const existing = target.destinations.find(d => d.chapter === ch);
             const habitat = a.habitatKey(node) || node.name;
@@ -79,7 +81,7 @@ export async function createHuntCatalog(source: string) {
         }
         for (const step of chapter.steps.filter((step: Vendor) => step.kind === 'static' && step.skies?.length)) {
           const target = weatherTarget(step.id), node = { ...step, ch };
-          if (target.owned || step.once && s.adv.gifts[step.once] || step.after && !s.adv.gifts[step.after]
+          if (target.owned || blockedRegion(region, step.id) || step.once && s.adv.gifts[step.once] || step.after && !s.adv.gifts[step.after]
             || step.caught && !step.caught.every((id: number) => s.dex[id])
             || step.needs && g.itemCount(step.needs) < (step.needN || 1)
             || step.night && t.DAYTIME.phase().key !== 'night' || step.day && t.DAYTIME.phase().key === 'night') continue;
@@ -91,11 +93,47 @@ export async function createHuntCatalog(source: string) {
         }
       }
       for (const target of weather.values()) { if (target.owned) target.status = '已拥有'; targets.push(target); }
+      // Read the complete native encounter pool, including conditional and rare
+      // slots. Gifts, eggs, trades and evolution-only species are not wild catches.
+      const add = (id: number, d: Destination) => {
+        if (blockedRegion(d.region, id)) return;
+        let target = targets.find(t => t.id === id);
+        if (!target) { target = { id, name: name(id), kind: 'wild', owned: g.owns(id), status: '可捕捉', destinations: [] }; targets.push(target); }
+        if (target.owned) return;
+        if (target.kind === 'weather') target.kind = 'wild';
+        const existing = target.destinations.find(x => x.chapter === d.chapter && x.staticId === d.staticId && !x.weather);
+        if (existing) { for (const habitat of d.habitats || []) if (!existing.habitats?.includes(habitat)) (existing.habitats ||= []).push(habitat); existing.chance = Math.max(existing.chance || 0, d.chance || 0); }
+        else target.destinations.push(d);
+        target.status = '可捕捉';
+      };
+      for (let ch = 0; ch <= s.adv.unlocked && ch < story.CHAPTERS.length; ch++) {
+        const chapter = story.CHAPTERS[ch];
+        if (chapter.league || !story.regionUnlocked(story.regionOf(ch).key, s.adv)) continue;
+        const routes = chapter.steps.filter((step: Vendor) => step.kind === 'route');
+        for (const [i, step] of routes.entries()) {
+          if (!step.wild || step.tide && (step.tide === 'low') !== story.lowTide()) continue;
+          const node = { ...step, type: 'wild', ch, lv: step.lv || story.routeBand(ch, i, routes.length) };
+          if (step.veil && !s.adv.gifts[step.veil.after]) { node.veil = step.veil.types || []; node.veilIds = step.veil.ids; }
+          for (const p of a.zonePool(node, ch, true, null, true, false)) {
+            if (!p.on || p.when?.some((key: string) => weatherKeys.has(key))) continue;
+            add(p.id, { ...destination(ch), chance: p.pct, habitats: [a.habitatKey(node) || node.name] });
+          }
+        }
+        for (const step of chapter.steps.filter((step: Vendor) => step.kind === 'static' && !step.skies?.length && !step.spirit)) {
+          if (step.once && s.adv.gifts[step.once] || step.after && !s.adv.gifts[step.after]
+            || step.caught && !step.caught.every((id: number) => s.dex[id]) || step.needs && g.itemCount(step.needs) < (step.needN || 1)
+            || step.night && t.DAYTIME.phase().key !== 'night' || step.day && t.DAYTIME.phase().key === 'night') continue;
+          add(step.id, { ...destination(ch), staticId: step.id, chance: step.chance || 1 });
+        }
+      }
+      targets.forEach(target => { target.dexMissing = !g.owns(target.id); });
       const berries = Object.entries(t.CONFIG.BUFF_BERRIES).map(([key, value]) => {
         const b = value as Vendor;
         return { key, name: berryNames[key] || b.name, family: b.family, mult: b.mult, minutes: t.CONFIG.BUFF_MIN, stock: g.itemCount(key) };
       });
-      return { now, targets, chapter: s.adv.chapter, team, berries };
+      const box = s.mons.map((m: Vendor) => ({ uid: String(m.uid), id: m.id, name: name(m.id), level: m.level, shiny: !!m.shiny }));
+      const presets = [{ name: '当前冒险队', team: s.team.map(String) }, ...(s.teamSets?.list || []).flatMap((ts: string[] | null, i: number) => ts?.length ? [{ name: `游戏预设队伍 ${i + 1}`, team: ts.map(String) }] : [])];
+      return { now, targets, chapter: s.adv.chapter, team, berries, box, presets };
     });
   };
 }

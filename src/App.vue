@@ -64,7 +64,7 @@ const themes = { common: { primaryColor: '#87d9b1', primaryColorHover: '#a6ecc8'
           <NTabPane name="review" tab="回顾" :tab-props="tabProps('review')"><Review :runtime="r" /></NTabPane>
           <NTabPane name="settings" tab="设置" :tab-props="tabProps('settings')"><Settings :runtime="r" /></NTabPane>
         </NTabs>
-        <footer>{{ r.tracker.state.running ? '自动捕捉运行中' : '自动捕捉未运行' }} <span>记录仅保存在本机</span></footer>
+        <footer>{{ r.tracker.state.running ? '自动捕捉运行中' : '自动捕捉未运行' }} <span :title="r.cloudSave.state.phase" :style="r.cloudSave.state.issue ? 'color:#f1c897' : ''" data-testid="cloud-save-summary">云存档：{{ r.cloudSave.state.short }}</span></footer>
       </template>
     </aside>
     <FarmingWindow :runtime="r" />

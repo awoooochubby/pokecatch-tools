@@ -1,7 +1,8 @@
 import { isolatedEngine, type Vendor } from '../simulation/isolated';
-import { wilson } from '../simulation/statistics';
+import { Moments, wilson } from '../simulation/statistics';
 import { pokemonName } from '../core/pokemon';
 import type { RaidInput, RaidReport } from './types';
+import { expectedClearMoves } from './time';
 
 class Victory extends Error {}
 export async function predictRaid(source: string, raw: string, now: number, input: RaidInput, trials = 512,
@@ -12,13 +13,21 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
     if (signature(input.allies) !== signature(input.alternateAllies)) throw new Error('备选出场顺序的参战成员不一致');
     const first = await predictRaid(source, raw, now, { ...input, alternateAllies: undefined }, trials, done => progress(done, trials * 2), baseSeed);
     const second = await predictRaid(source, raw, now, { ...input, allies: input.alternateAllies, alternateAllies: undefined }, trials, done => progress(trials + done, trials * 2), baseSeed);
-    const worst = first.win.mean <= second.win.mean ? first : second;
+    const worst = (first.expectedClearMoves ?? Infinity) >= (second.expectedClearMoves ?? Infinity) ? first : second;
     return { ...worst, input, orderResults: [first.win, second.win],
       win: { mean: worst.win.mean, low: Math.min(first.win.low, second.win.low), high: Math.max(first.win.high, second.win.high) } };
   }
   let seed = baseSeed >>> 0;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
-  const { t, setTime } = await isolatedEngine(source, now, random, undefined, ['Raids', 'LegendZones']);
+  let allyMoves = 0, enemyMoves = 0;
+  const { t, setTime } = await isolatedEngine(source, now, random, event => {
+    // Native zoneFollow events are extra victims of one AoE animation. Misses,
+    // status moves, counters and rage each count as one move when animated.
+    if (event.type === 'attack' && !event.zoneFollow) {
+      if (event.side === 'ally') allyMoves++; else enemyMoves++;
+    }
+    return event;
+  }, ['Raids', 'LegendZones']);
   const g = t.Game, a = t.Adventure, cfg = t.CONFIG.RAID, original = JSON.parse(raw);
   if (!Array.isArray(original.mons) || !Number.isInteger(original.adv?.chapter) || !t.STORY.REGIONS.some((r: Vendor) => r.key === input.region)
     || !g.DEX[input.boss] || input.date !== t.Raids.dateKey(now)) throw new Error('团体战快照已失效，请重新读取');
@@ -32,7 +41,7 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
   // lives exclusively in the disposable engine, never on the game page.
   t.Raids.result = () => { throw new Victory(); };
   const copy = <T>(x: T): T => JSON.parse(JSON.stringify(x));
-  let wins = 0;
+  let wins = 0; const ally = new Moments(), enemy = new Moments(), total = new Moments();
   for (let trial = 0; trial < trials; trial++) {
     seed = (baseSeed + Math.imul(trial + 1, 2654435761)) >>> 0; setTime(now);
     const s = Object.assign(g.freshState(), copy(original));
@@ -42,6 +51,7 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
     s.adv = { ...s.adv, zone: null, tower: null, pending: null, node: 0, battle: null,
       event: { raid: true, reg: input.region, date: input.date, id: input.boss, seq: `R:${input.region}:${input.date}`, level: cfg.LEVEL, back: s.adv.chapter, loops: 0 } };
     s.road = null;
+    allyMoves = 0; enemyMoves = 0; let stepMs = 0;
     try {
       const outcome = g.sandbox(s, () => {
         s.adv.nodes = t.Raids.buildRun(s.adv.event);
@@ -49,7 +59,7 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
         if (weather !== input.weather) throw new Error('团体战天气与快照不一致，请重新读取；暂不能使用这套环境推算');
         g.healTeam();
         if (g.teamMons().length !== input.mine.length + input.allies.length) throw new Error('原生参战队伍与读取配置不一致，无法可靠预测');
-        const stepMs = Math.max(t.CONFIG.ACTION_MS, t.CONFIG.STEP_MS) / a.speed();
+        stepMs = Math.max(t.CONFIG.ACTION_MS, t.CONFIG.STEP_MS) / a.speed();
         for (let step = 0; step < 20000; step++) {
           setTime(now + step * stepMs); a.addTime(Math.max(t.CONFIG.ACTION_MS, t.CONFIG.STEP_MS));
           const events: Vendor[] = a.step();
@@ -60,9 +70,11 @@ export async function predictRaid(source: string, raw: string, now: number, inpu
       });
       if (outcome) wins++;
     } catch (e) { if (e instanceof Victory) wins++; else throw e; }
+    ally.add(allyMoves); enemy.add(enemyMoves); total.add(allyMoves + enemyMoves);
     if ((trial + 1) % 32 === 0 || trial + 1 === trials) { progress(trial + 1, trials); await new Promise(resolve => setTimeout(resolve, 0)); }
   }
   const team = [...input.mine.map(uid => original.mons.find((m: Vendor) => m.uid === uid)), ...input.allies]
     .map((m, i) => ({ id: m.id, name: pokemonName(m.id), level: Math.min(m.level, cfg.LEVEL), shiny: !!m.shiny, ally: i >= input.mine.length }));
-  return { input, trials, wins, win: wilson(wins, trials), generatedAt: now, team };
+  return { input, trials, wins, win: wilson(wins, trials), generatedAt: now, team, moves: { ally: ally.interval(), enemy: enemy.interval(), total: total.interval() },
+    expectedClearMoves: expectedClearMoves(total.mean, wins / trials) };
 }

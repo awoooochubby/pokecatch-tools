@@ -4,6 +4,7 @@ import { fetchEngineSource } from '../simulation/source';
 import { readRaidCatalog, raidDate } from '../raid/read';
 import type { RaidInput, RaidReport, RaidEntry } from '../raid/types';
 import type { GameAdapter } from '../core/game';
+import { raidPlanContext, type RaidPlan } from '../raid/planner';
 
 export function raidContext(raw: string, input: RaidInput, now: number) {
   const s = JSON.parse(raw);
@@ -17,11 +18,12 @@ export function raidContext(raw: string, input: RaidInput, now: number) {
 export function createRaidPredictor(game: GameAdapter) {
   const state = reactive({ inputs: [] as RaidInput[], entries: [] as RaidEntry[], reports: {} as Record<string, RaidReport>, failures: {} as Record<string, string>,
     selected: '', busy: false, done: 0, total: 512, sampleTotal: 512, completed: 0, count: 0, current: '', report: null as RaidReport | null,
-    error: '', phase: '读取游戏里已配置的异色团体战，预测从入口打败首领的成功率', stale: false });
+    error: '', phase: '预测团战胜率与耗时，或搜索期望通关时间较短的阵容', stale: false,
+    plans: {} as Record<string, RaidPlan>, optimizing: false });
   let worker: globalThis.Worker | null = null, controller: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined, context = '';
   const now = () => Math.max(Date.now(), Number(localStorage.getItem('pokecatch.clock')) || 0);
   const rawSave = () => { const raw = localStorage.getItem('gachamon-save-v1'); if (!raw) throw new Error('尚无游戏存档'); return raw; };
-  function stop() { controller?.abort(); controller = null; worker?.terminate(); worker = null; clearTimeout(timer); state.busy = false; }
+  function stop() { controller?.abort(); controller = null; worker?.terminate(); worker = null; clearTimeout(timer); state.busy = false; state.optimizing = false; }
   function fail(message: string) { stop(); state.error = message; state.phase = '预测未完成'; }
   async function snapshot(signal: AbortSignal) {
     if (!game.auditedExperienceRules()) throw new Error(game.compatibilityMessage());
@@ -51,7 +53,7 @@ export function createRaidPredictor(game: GameAdapter) {
   async function load(run: 'all' | 'one' | false = false) {
     if (state.busy) return;
     stop(); context = ''; state.error = ''; state.busy = true; state.done = 0; state.stale = false; state.report = null;
-    state.reports = {}; state.failures = {}; state.completed = 0; state.count = 0;
+    state.reports = {}; state.plans = {}; state.failures = {}; state.completed = 0; state.count = 0;
     state.phase = '读取团体战首领、自己的精灵与两名队友';
     const abort = controller = new AbortController();
     timer = setTimeout(() => fail('团体战读取超时，请重试'), 30000);
@@ -94,7 +96,43 @@ export function createRaidPredictor(game: GameAdapter) {
       next();
     } catch (e) { if (!abort.signal.aborted) fail((e as Error).message); }
   }
+  async function optimize(region: string) {
+    if (state.busy) return;
+    stop(); state.busy = true; state.optimizing = true; state.error = ''; state.done = 0; state.current = region;
+    state.phase = '筛选自己的精灵与实际 NPC 队友，按双方期望总出招数比较';
+    const abort = controller = new AbortController();
+    try {
+      timer = setTimeout(() => fail('团战配队搜索超时，请重试'), 180000);
+      const data = await snapshot(abort.signal);
+      if (!data || abort.signal.aborted) return;
+      state.entries = data.entries; state.inputs = data.inputs; state.selected = region;
+      const entry = data.entries.find(e => e.region === region);
+      if (!entry) throw new Error('今天没有这场团战，请重新读取');
+      const source = await fetchEngineSource(abort.signal);
+      if (abort.signal.aborted) return;
+      worker = new Worker(); worker.onerror = () => fail('团战配队搜索进程失败');
+      worker.onmessage = event => {
+        if (abort.signal.aborted) return;
+        const msg = event.data;
+        if (msg.type === 'progress') { state.done = msg.done; state.sampleTotal = msg.total; }
+        if (msg.type === 'error') fail(msg.message);
+        if (msg.type === 'optimized') {
+          const plan: RaidPlan = msg.plan;
+          state.plans[region] = plan; state.reports[region] = plan.report; state.report = plan.report;
+          stop(); state.stale = raidPlanContext(rawSave(), entry) !== plan.context;
+          state.phase = `搜索完成 · 比较 ${plan.candidates} 组阵容，按包含失败重试的期望出招数排序`;
+        }
+      };
+      worker.postMessage(JSON.parse(JSON.stringify({ source, save: data.raw, now: data.time, optimize: entry })));
+    } catch (e) { if (!abort.signal.aborted) fail((e as Error).message); }
+  }
   const off = game.bus.on('sample', () => {
+    if (state.plans[state.selected] && !state.busy) {
+      try { const entry = state.entries.find(e => e.region === state.selected)!;
+        state.stale = raidPlanContext(rawSave(), entry) !== state.plans[state.selected].context;
+      } catch { state.stale = true; }
+      return;
+    }
     if (!context) return;
     try {
       const time = now(), raw = rawSave();
@@ -106,7 +144,7 @@ export function createRaidPredictor(game: GameAdapter) {
       }
     } catch { state.stale = true; }
   });
-  return { state, load: () => load(), run: () => load('all'), runOne: () => load('one'),
+  return { state, load: () => load(), run: () => load('all'), runOne: () => load('one'), optimize,
     select(region: string) { state.selected = region; state.report = state.reports[region] || null; },
     cancel() { stop(); state.phase = '已取消预测'; }, dispose() { stop(); off(); } };
 }

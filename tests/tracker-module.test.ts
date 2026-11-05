@@ -72,7 +72,7 @@ describe('追踪器生命周期与自动操作', () => {
     await ready(); tracker.persist(); tracker.start();
     Object.defineProperty(document, 'hidden', { value: true, configurable: true }); reply(); expect(nav.travel).not.toHaveBeenCalled();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true }); poll(); reply(); expect(nav.travel).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(storage.getItem('pc-tools-v1')!).data.tracker).toEqual({ targets: [243, 244], mode: 'ordered', weather: null, berries: [] });
+    expect(JSON.parse(storage.getItem('pc-tools-v1')!).data.tracker).toEqual({ targets: [243, 244], mode: 'ordered', weather: null, berries: [], defaultTeam: ['a'] });
     tracker.dispose(); tracker = createTracker({ bus, auditedExperienceRules: () => true } as unknown as GameAdapter, new Store(storage), nav);
     expect(tracker.state.running).toBe(false); expect(tracker.prefs.targets).toEqual([243, 244]);
   });
@@ -95,6 +95,12 @@ describe('追踪器生命周期与自动操作', () => {
     });
     tracker.start(); reply();
     expect(tracker.state.running).toBe(true); expect(tracker.state.error).toBe('');
+  });
+  it('绑定的未满冒险预设被原生捕获填空位后保留新成员，追踪不中断', async () => {
+    await ready(); tracker.prefs.teams = { 243: ['a'] }; tracker.start(); reply();
+    save.mons.push({ id: 16, uid: 'new-wild', level: 10, xp: 0 }); save.team.push('new-wild'); write();
+    poll(); reply(); expect(tracker.state.running).toBe(true); expect(tracker.state.error).toBe('');
+    expect(tracker.prefs.teams[243]).toEqual(['a', 'new-wild']);
   });
   it('自动吃所选果子，到期续吃、缺货恢复和手动停止均生效', async () => {
     catalog.berries = [{ key: 'pinap-berry', family: 'xp', name: '凰梨果', minutes: 60, mult: 1.25, stock: 2 }];

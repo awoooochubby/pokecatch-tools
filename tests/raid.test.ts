@@ -60,7 +60,7 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生团体战胜率', () => 
     group.boss = 130; group.weather = native.Raids.sceneOf(130, group.region, group.date).weather || null;
     const report = await predictRaid(source, JSON.stringify(teamSave), now, group, trials, () => {}, seed);
     expect(report.wins).toBeGreaterThan(0); expect(report.wins).toBeLessThan(trials);
-    let wins = 0;
+    let wins = 0, allyMoves = 0, enemyMoves = 0;
     for (let i = 0; i < trials; i++) {
       const t = referenceEngine(source, now, (seed + Math.imul(i + 1, 2654435761)) >>> 0, ['Raids', 'LegendZones']), g = t.Game, copy = structuredClone(teamSave);
       copy.raids = { allies: structuredClone(group.allies), done: {}, last: [], bots: {}, pick: {}, byBoss: {}, botsV: 3, timesV: 1, pityV: 1, paceV: 1 };
@@ -72,6 +72,9 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生团体战胜率', () => 
         expect(g.teamMons().map((m: any) => m.uid)).toEqual([...group.mine, ...group.allies.map(m => m.uid)]);
         for (let step = 0; step < 20000; step++) {
           const boss = !!copy.adv.battle?.raid, events = t.Adventure.step();
+          for (const e of events) if (e.type === 'attack' && !e.zoneFollow) {
+            if (e.side === 'ally') allyMoves++; else enemyMoves++;
+          }
           if (boss && events.some((e: any) => e.type === 'victory' && e.kind === 'static')) { won = true; break; }
           if (events.some((e: any) => e.type === 'defeat')) break;
         }
@@ -79,6 +82,10 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生团体战胜率', () => 
       if (won) wins++;
     }
     expect(report.wins).toBe(wins);
+    expect(report.moves.ally.mean).toBeCloseTo(allyMoves / trials, 10);
+    expect(report.moves.enemy.mean).toBeCloseTo(enemyMoves / trials, 10);
+    expect(report.moves.total.mean).toBeCloseTo((allyMoves + enemyMoves) / trials, 10);
+    expect(report.expectedClearMoves).toBeCloseTo((allyMoves + enemyMoves) / wins, 10);
   }, 30000);
   it('缺少队友、重复参战 UID、天气不一致与跨日快照均拒绝推算', async () => {
     const raw = JSON.stringify(s);
