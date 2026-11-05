@@ -24,7 +24,7 @@ export function createRaidPredictor(game: GameAdapter) {
   function stop() { controller?.abort(); controller = null; worker?.terminate(); worker = null; clearTimeout(timer); state.busy = false; }
   function fail(message: string) { stop(); state.error = message; state.phase = '预测未完成'; }
   async function snapshot(signal: AbortSignal) {
-    if (!game.auditedExperienceRules()) throw new Error('当前游戏版本尚未适配团体战预测');
+    if (!game.auditedExperienceRules()) throw new Error(game.compatibilityMessage());
     {
       if (!document.querySelector('#screen-raid.active')) {
         const nav = document.querySelector<HTMLElement>('#tabs [data-screen="raid"]');
@@ -37,6 +37,7 @@ export function createRaidPredictor(game: GameAdapter) {
       const deadline = Date.now() + 15000;
       while (!document.querySelector('#raid-root .rc-card[data-rc]')) {
         if (signal.aborted) return null;
+        if (document.querySelector('#raid-root [data-raid-draw], .rd-fx')) throw new Error('游戏新增每日团战抽签，请先在游戏里揭晓今日团战结果，再读取预测');
         if (Date.now() >= deadline) throw new Error('尚未读取到今日异色团体战，请先在游戏里登录并配置队伍和队友');
         await new Promise(resolve => setTimeout(resolve, 150));
       }

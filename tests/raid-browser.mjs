@@ -89,6 +89,12 @@ try {
   await page.getByTestId('raid-phase').filter({ hasText: '预测完成' }).waitFor({ timeout: 120000 });
   assert.match(await page.locator('[data-testid="raid-row"][data-region="hoenn"]').innerText(), /成功率/);
   assert.match(await page.locator('[data-testid="raid-row"][data-region="sinnoh"]').innerText(), /成功率/);
+  await page.evaluate(() => { document.querySelector('#raid-root').innerHTML = '<button data-raid-draw>揭晓今日团战</button>'; });
+  await page.getByTestId('raid-load').click();
+  await page.getByRole('alert').filter({ hasText: '每日团战抽签' }).waitFor();
+  await page.evaluate(url => { document.querySelector(`script[src="${url}"]`).src = 'https://pokecatch-online.pages.dev/bundle/app.deadbeef123.js'; }, version.url);
+  await page.getByTestId('raid-load').click();
+  await page.getByRole('alert').filter({ hasText: `本助手适配 ${version.hash.slice(0, 10)}` }).waitFor();
   assert.deepEqual(errors, []);
   console.log('PASS: all four raids during an active battle, independent batch results, incomplete/error rows, both friend orders without starting a raid, cancellation, stale report and unchanged battle/save');
 } finally { await browser.close(); }

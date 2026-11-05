@@ -113,7 +113,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     const abort = controller = new AbortController();
     timeout = setTimeout(() => { cancelWorker(); fail('读取目标超时，请重试'); }, 30000);
     try {
-      if (!game.auditedExperienceRules()) throw new Error('当前游戏版本尚未适配自动捕捉，请更新插件');
+      if (!game.auditedExperienceRules()) throw new Error(game.compatibilityMessage());
       const raw = rawSave();
       const source = await fetchEngineSource(abort.signal);
       if (abort.signal.aborted || disposed) return;
@@ -136,7 +136,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
       if (!prefs.targets.length) throw new Error('请先选择至少一个目标');
       if (prefs.targets.some(id => !state.catalog!.targets.some(t => t.id === id))) throw new Error('部分目标不在当前可追踪列表，请重新选择');
       const s = JSON.parse(rawSave());
-      if (!game.auditedExperienceRules()) throw new Error('当前游戏版本尚未适配自动捕捉');
+      if (!game.auditedExperienceRules()) throw new Error(game.compatibilityMessage());
       if (!s.team.length) throw new Error('请先配好冒险队伍');
       if (s.adv.event || s.adv.tower) throw new Error('请先退出活动／高塔，再开始自动捕捉');
       if (s.adv.paused) throw new Error('游戏处于暂停状态，请先恢复游戏');

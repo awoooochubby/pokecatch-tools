@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Store, STORAGE_KEY } from '../src/core/storage';
 import { EventBus } from '../src/core/events';
-import { parseSave } from '../src/core/game';
+import { parseSave, GameAdapter } from '../src/core/game';
+import engineVersion from '../src/simulation/version.json';
 import { effectiveness, dex } from '../src/core/pokemon';
 import { emptySession, sampleSession, validSession, createExperience } from '../src/modules/experience';
 import { createEnemies, identifySpecies } from '../src/modules/enemies';
 import type { GameSave, GameEvents } from '../src/core/types';
-import type { GameAdapter } from '../src/core/game';
 
 class MemoryStorage implements Storage {
   private data = new Map<string, string>();
@@ -167,5 +167,26 @@ describe('enemy events and lifecycle', () => {
     expect(m.state.previous?.unknown).toBe(10); expect(m.state.current.unknown).toBe(0);
     expect(createEnemies(game, store).state.previous?.unknown).toBe(10);
     m.state.showPrevious = true; m.clear(); expect(m.state.previous?.unknown).toBe(10);
+  });
+});
+
+describe('game build compatibility diagnostics', () => {
+  const adapter = (urls: string[]) => new GameAdapter({ scripts: urls.map(src => ({ src })) } as unknown as Document);
+  it('accepts the audited build including duplicate tags and URL query strings', () => {
+    const game = adapter([engineVersion.url, engineVersion.url + '?v=1', 'https://example.com/other.js']);
+    expect(game.auditedExperienceRules()).toBe(true);
+    expect(game.gameBuilds()).toEqual([engineVersion.hash.slice(0, 10)]);
+  });
+  it('explains a real game update with both detected and supported builds', () => {
+    const game = adapter(['https://pokecatch-online.pages.dev/bundle/app.deadbeef123.js']);
+    expect(game.auditedExperienceRules()).toBe(false);
+    expect(game.compatibilityMessage()).toContain('deadbeef12');
+    expect(game.compatibilityMessage()).toContain(engineVersion.hash.slice(0, 10));
+    expect(game.compatibilityMessage()).toContain('请更新助手后刷新游戏');
+  });
+  it('does not call an unidentifiable or mixed build supported', () => {
+    expect(adapter([]).compatibilityMessage()).toContain('加载完成');
+    expect(adapter([]).auditedExperienceRules()).toBe(false);
+    expect(adapter([engineVersion.url, 'https://pokecatch-online.pages.dev/bundle/app.deadbeef123.js']).auditedExperienceRules()).toBe(false);
   });
 });

@@ -25,9 +25,20 @@ export class GameAdapter {
   private lastLog = '';
   private interrupted = false;
   constructor(private doc: Document = document) {}
+  gameBuilds() {
+    return [...new Set([...this.doc.scripts].flatMap(s => {
+      const hash = /\/bundle\/app\.([a-f0-9]+)\.js(?:[?#]|$)/.exec(s.src)?.[1];
+      return hash ? [hash] : [];
+    }))];
+  }
   auditedExperienceRules() {
-    const hashes = [...this.doc.scripts].map(s => /\/bundle\/app\.([a-f0-9]+)\.js(?:[?#]|$)/.exec(s.src)?.[1]).filter(Boolean);
-    return hashes.length > 0 && hashes.every(hash => hash!.length >= 10 && xpModel.hash.startsWith(hash!));
+    const hashes = this.gameBuilds();
+    return hashes.length > 0 && hashes.every(hash => hash.length >= 10 && xpModel.hash.startsWith(hash));
+  }
+  compatibilityMessage() {
+    const hashes = this.gameBuilds();
+    if (!hashes.length) return '暂时无法确认游戏版本，请等游戏加载完成后重试';
+    return `游戏与助手版本不一致：当前游戏 ${hashes.map(hash => hash.slice(0, 10)).join('／')}，本助手适配 ${xpModel.hash.slice(0, 10)}。请更新助手后刷新游戏；若助手已是最新版，需要更新规则适配后才能计算。`;
   }
   teamRow(uid: string | number) { return [...this.doc.querySelectorAll<HTMLElement>('#team-rail .tr-row[data-uid]')].find(n => n.dataset.uid === String(uid)); }
   monName(uid: string | number, id?: number) { return this.teamRow(uid)?.title.split('—')[0].trim() || `精灵 #${id ?? '?'}`; }

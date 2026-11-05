@@ -1,11 +1,12 @@
 {
-  "hash": "cf8c0470ea5d3c4ef263688d6ef5b76c34f8c99cfddee893ec87e7e197662c9a",
-  "url": "https://pokecatch-online.pages.dev/bundle/app.cf8c0470ea.js",
+  "hash": "443bc13cad9d1a0ead5b53a6462e8d28d0726ac5f7bdada1bfe52419bcb48478",
+  "url": "https://pokecatch-online.pages.dev/bundle/app.443bc13cad.js",
   "boot": "https://pokecatch-online.pages.dev/boot.js",
-  "timer": "As",
+  "timer": "Rs",
+  "eventSpreads": ["kt", "be"],
   "helpers": {
-    "choose": "ya",
-    "damage": "ne",
-    "finisher": "V"
+    "choose": "ha",
+    "damage": "z",
+    "finisher": "ot"
   }
 }

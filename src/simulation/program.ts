@@ -45,7 +45,7 @@ export function extractProgram(source: string, extras: readonly string[] = []): 
               function recordEvents(node: any) {
                 if (!node || typeof node.type !== 'string') return;
                 if (node.type === 'ObjectExpression' && node.properties.some((p: any) => p.key?.name === 'hp') &&
-                  (node.properties.some((p: any) => p.type === 'SpreadElement' && ['St', 'ye'].includes(p.argument.name)) ||
+                  (node.properties.some((p: any) => p.type === 'SpreadElement' && version.eventSpreads.includes(p.argument.name)) ||
                    node.properties.some((p: any) => p.key?.name === 'type' && ['attack', 'status'].includes(p.value?.value)))) {
                   edits.push({ start: node.start, end: node.end, text: `${root}.__record(${source.slice(node.start, node.end)})` });
                   return;
