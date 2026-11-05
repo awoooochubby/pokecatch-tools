@@ -84,7 +84,7 @@ try {
           modal.querySelector('.dc-x').onclick=close;
           const pick=value=>{const live=JSON.parse(localStorage.getItem('gachamon-save-v1'));live.raids.pick.kanto[i]=value;write(live);close();render()};
           if(current.raids.pick.kanto[i]){const remove=document.createElement('button');remove.className='btn ghost';remove.textContent='移除';remove.onclick=()=>pick(null);modal.querySelector('.modal-actions').append(remove)}
-          for(const bot of current.raids.bots.kanto){if(current.raids.pick.kanto[1-i]===bot.key)continue;const b=document.createElement('button');b.dataset.pick=bot.key;b.textContent=bot.name;b.onclick=()=>pick(bot.key);modal.firstElementChild.append(b)}
+          for(const bot of current.raids.bots.kanto){if(current.raids.pick.kanto[1-i]===bot.key)continue;const b=document.createElement('button');b.className='raid-pick';b.dataset.pick=bot.key;b.innerHTML=`<span class="nm"><b>${bot.name}</b></span><span class="rt-mons">${bot.mons.map(m=>`<span class="rt-mon"><img src="assets/pokemon/${m.id}.png"><span class="rt-lv">Lv.${m.level}</span></span>`).join('')}</span>`;b.onclick=()=>pick(bot.key);modal.firstElementChild.append(b)}
           document.querySelector('#modal-root').append(modal);
         };
       }

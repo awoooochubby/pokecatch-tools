@@ -1,10 +1,11 @@
 import type { RaidAlly, RaidInput, RaidEntry } from './types';
+export type { RaidOffer } from './types';
 const regions = new Set(['kanto', 'johto', 'hoenn', 'sinnoh']);
 export const raidDate = (now: number) => {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now).map(p => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
-function sprite(el: Element | null) {
+export function sprite(el: Element | null) {
   const path = el?.getAttribute('src') || '';
   const match = /\/pokemon\/(?:art\/)?(shiny\/)?(?:still\/)?(\d+)\.(?:png|gif)(?:[?#]|$)/.exec(path);
   if (!match) throw new Error('团体战精灵图片格式发生变化，请更新适配');

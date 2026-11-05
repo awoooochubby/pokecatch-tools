@@ -8,10 +8,11 @@ import { chapterLabel } from '../core/chapters';
 import { berryEffects } from '../tracker/berries';
 import { raidIds } from '../raid/planner';
 import { formatRaidMoves } from '../raid/time';
+import Hatchery from './Hatchery.vue';
 import RaidComparison from './RaidComparison.vue';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const t = r.tracker, s = t.state, prefs = t.prefs;
-const view = ref<'setup'|'reports'|'monitor'>('setup');
+const view = ref<'setup'|'reports'|'monitor'|'eggs'>('setup');
 const resultTargets = computed(() => (s.catalog?.targets || []).filter(target => s.predictions[target.id] || target.kind === 'raid' && raidPlan(target.id)));
 async function predict(id: number) { view.value = 'reports'; await t.predict(id); }
 function start() { t.start(); if (s.running) view.value = 'monitor'; }
@@ -38,13 +39,14 @@ function setTeam(id: number, value: string) { t.setTeam(id, value ? JSON.parse(v
 function raidTeam(id: number, value: string[]) { if (value.length > 2) { s.error = '团战最多选自己的两只精灵'; return; } t.setTeam(id, value); }
 </script>
 <template>
-  <div class="analysis-heading"><div><span class="eyebrow">自动捕捉</span><h2>捕捉任务台</h2></div><span class="state-pill" :class="s.running ? 'running' : 'idle'">{{ s.running ? '挂机运行中' : '尚未启动' }}</span></div>
-  <div class="flow-nav"><button :class="{active:view==='setup'}" @click="view='setup'">01 队列设置</button><button :class="{active:view==='reports'}" @click="view='reports'">02 模拟报告 <i v-if="resultTargets.length" class="result-dot"></i></button><button :class="{active:view==='monitor'}" @click="view='monitor'">03 挂机状态</button></div>
+  <div class="analysis-heading"><div><span class="eyebrow">自动捕捉</span><h2>挂机任务台</h2></div><span class="state-pill" :class="s.running ? 'running' : 'idle'">{{ s.running ? '挂机运行中' : '尚未启动' }}</span></div>
+  <div class="flow-nav tracker-views"><button :class="{active:view==='setup'}" @click="view='setup'">01 队列设置</button><button :class="{active:view==='reports'}" @click="view='reports'">02 模拟报告 <i v-if="resultTargets.length" class="result-dot"></i></button><button :class="{active:view==='monitor'}" @click="view='monitor'">03 挂机状态</button><button :class="{active:view==='eggs'}" data-testid="hatchery-tab" @click="view='eggs'">孵蛋 <i v-if="r.hatchery.state.eggs.some(e => e.shiny)" class="result-dot"></i></button></div>
+  <Hatchery v-if="view==='eggs'" :runtime="r" />
   <div v-show="view==='setup'">
   <p class="hint">神兽、补图鉴、天气怪和团战共用一个队列。每个目标可绑定队伍；抓到后自动换目标，游走位置变化后自动跟随。</p>
-  <NButton block secondary :loading="s.busy && !s.catalog" :disabled="s.running || s.busy || s.analysing || s.raidBusy" data-testid="tracker-load" @click="t.load">读取目标与天气</NButton>
+  <NButton block secondary :loading="s.busy && !s.catalog" :disabled="s.running || r.hatchery.state.busy || s.busy || s.analysing || s.raidBusy" data-testid="tracker-load" @click="t.load">读取目标与天气</NButton>
   <template v-if="s.catalog">
-    <div class="actions" style="margin-top: 10px"><NButton size="small" :disabled="s.running || s.busy || s.analysing" data-testid="tracker-fill-dex" @click="t.addMissing">一键加入可抓的缺失图鉴</NButton><NButton size="small" :loading="s.raidBusy" :disabled="s.running || s.analysing || r.raid.state.busy" data-testid="tracker-raids" @click="t.loadRaids">读取今日团战</NButton></div>
+    <div class="actions" style="margin-top: 10px"><NButton size="small" :disabled="s.running || r.hatchery.state.busy || s.busy || s.analysing" data-testid="tracker-fill-dex" @click="t.addMissing">一键加入可抓的缺失图鉴</NButton><NButton size="small" :loading="s.raidBusy" :disabled="s.running || s.analysing || r.hatchery.state.busy || r.raid.state.busy" data-testid="tracker-raids" @click="t.loadRaids">读取今日团战</NButton></div>
     <p v-if="s.notice" class="hint" role="status">{{ s.notice }}</p>
     <h3>想抓哪些？</h3>
     <NSelect :value="prefs.targets" :options="options" multiple :max-tag-count="3" filterable :to="overlayTarget" :disabled="s.running || s.analysing" placeholder="搜索神兽、野生怪或今日团战" aria-label="自动捕捉目标" @update:value="updateTargets" />
@@ -75,7 +77,7 @@ function raidTeam(id: number, value: string[]) { if (value.length > 2) { s.error
       <div v-if="opportunities.length" class="hunt-weather" data-testid="hunt-weather"><strong>当前天气机会</strong><small v-for="target in opportunities.slice(0, 8)" :key="target.id">{{ target.name }} · {{ wx[target.destinations[0].weather!] || '特殊天气' }} · {{ chapterLabel(target.destinations[0].name) }}</small><small v-if="opportunities.length > 8">还有 {{ opportunities.length - 8 }} 个候选，抓到后会继续挑选</small></div>
       <p v-else class="hint">目前没有关注中的天气机会；挂机时会持续检查。</p>
     </template>
-    <NButton v-if="!s.running" block type="primary" :disabled="!prefs.targets.length || s.busy || s.analysing || s.raidBusy || r.raid.state.busy" data-testid="tracker-start" @click="start">开始挂机捕捉</NButton>
+    <NButton v-if="!s.running" block type="primary" :disabled="!prefs.targets.length || s.busy || s.analysing || s.raidBusy || r.hatchery.state.busy || r.raid.state.busy" data-testid="tracker-start" @click="start">开始挂机捕捉</NButton>
     <p class="hint">挂机时让游戏标签页保持可见，可放在独立窗口。隐藏标签页后，游戏离线结算不会遇到游走神兽；恢复可见会自动继续。刷新后需重新开始。</p>
   </template>
   </div>

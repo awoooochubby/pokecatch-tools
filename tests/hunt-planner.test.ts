@@ -65,20 +65,20 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生追踪模拟与共享团
     const onlyFirst = structuredClone(s); onlyFirst.adv.unlocked = 0;
     const limited = (await createHuntCatalog(source))(JSON.stringify(onlyFirst), now);
     expect(limited.targets.filter(t => t.kind === 'wild').every(t => t.destinations.every(d => d.chapter === 0))).toBe(true);
-  });
+  }, 15000);
   it('共享团战搜索使用真实 NPC，在候选间按期望出招排序，并独立验证', async () => {
     const { s, native } = fixture(); s.adv.badges.push('Maître Kanto');
     const mons = [445, 376, 130, 143, 392, 462];
     s.raids = { bots: { sinnoh: [0, 1, 2].map(i => ({ key: `b-test-${i}`, name: `NPC ${i}`, mons: mons.slice(i * 2, i * 2 + 2).map((id, j) => ({ id, uid: `bot-${i}-${j}`, level: 100, xp: 0, bot: true, statMult: .85 })) })) }, pick: {}, done: {}, botsV: 3, timesV: 1, pityV: 1, paceV: 1 };
     const raw = JSON.stringify(s), trace: any[] = [];
     const plan = await optimizeRaid(source, raw, now, { region: 'sinnoh', boss: 25, date: native.Raids.dateKey(now), done: false, input: null, error: '' }, s.team.slice(0, 2), () => {}, row => trace.push(structuredClone(row)));
-    expect(plan.analysis).toHaveLength(3); expect(plan.analysis.every(row => row.screening.trials === 32)).toBe(true);
-    expect(plan.analysis.filter(row => row.validation).every(row => row.validation!.trials === 512)).toBe(true);
+    expect(plan.analysis).toHaveLength(3); expect(plan.analysis.every(row => row.screening.trials === 128)).toBe(true);
+    expect(plan.analysis.filter(row => row.validation).every(row => row.validation!.trials === 1024)).toBe(true);
     expect(trace.filter(row => !row.validation)).toHaveLength(3); expect(trace.filter(row => row.validation)).toHaveLength(3);
     const winner = plan.analysis.find(row => row.key === plan.chosenKey)!;
     expect(winner.validation!.expectedClearMoves).toBe(plan.report.expectedClearMoves);
     expect(plan.report.expectedClearMoves).toBe(Math.min(...plan.analysis.flatMap(row => row.validation?.expectedClearMoves != null ? [row.validation.expectedClearMoves] : [])));
-    expect(plan.candidates).toBe(3); expect(plan.report.trials).toBe(512);
+    expect(plan.candidates).toBe(3); expect(plan.report.trials).toBe(1024);
     expect(plan.report.moves.total.mean).toBeGreaterThan(0); expect(plan.report.moves.enemy.mean).toBeGreaterThan(0);
     expect(plan.report.expectedClearMoves).toBeCloseTo(plan.report.moves.total.mean / plan.report.win.mean);
     expect(plan.picks).toHaveLength(2); expect(JSON.stringify(s)).toBe(raw);

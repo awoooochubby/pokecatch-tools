@@ -29,3 +29,8 @@
 @container (max-width:370px){.app-header{padding:10px!important}.drag-handle{gap:6px}.brand-icon{width:28px;height:28px;font-size:18px}.drag-handle strong{font-size:14px}.app-header .actions{gap:2px}.app-header .n-button{padding:0 6px!important}}
 @container (min-width:740px){.analysis-table{font-size:12px}.analysis-table th{font-size:11px}}
 .pc-overlays{position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none}.pc-overlays .n-base-select-menu{pointer-events:auto}.analysis-method{font-size:11px;color:#9eb4bf;margin:14px 0}.analysis-method summary{cursor:pointer;line-height:2}
+
+/* Capture and hatchery share the task desk, with a dedicated egg view. */
+.flow-nav.tracker-views{grid-template-columns:repeat(4,minmax(0,1fr))}
+.egg-card.shiny-egg{border-color:#d6b45d;background:linear-gradient(120deg,#332e20,#1d2630)}
+.egg-card p{margin:8px 0}

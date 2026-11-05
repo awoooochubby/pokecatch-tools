@@ -1,10 +1,11 @@
+import { collectRaidOffers } from '../raid/offers';
 import { reactive } from 'vue';
 import Worker from '../raid/worker?worker&inline';
 import { fetchEngineSource } from '../simulation/source';
 import { readRaidCatalog, raidDate } from '../raid/read';
 import type { RaidInput, RaidReport, RaidEntry } from '../raid/types';
 import type { GameAdapter } from '../core/game';
-import { raidPlanContext, type RaidPlan, type RaidCandidateAnalysis } from '../raid/planner';
+import { raidPlanContext, type RaidPlan, type RaidCandidateAnalysis, type RaidSearchOptions } from '../raid/planner';
 
 export function raidContext(raw: string, input: RaidInput, now: number) {
   const s = JSON.parse(raw);
@@ -16,6 +17,7 @@ export function raidContext(raw: string, input: RaidInput, now: number) {
     buffs: s.buffs, autoSwitch: s.autoSwitch, speed: s.adv.speed });
 }
 export function createRaidPredictor(game: GameAdapter) {
+  const search = reactive<RaidSearchOptions>({ mode: 'balanced', ownLimit: 8 });
   const state = reactive({ inputs: [] as RaidInput[], entries: [] as RaidEntry[], reports: {} as Record<string, RaidReport>, failures: {} as Record<string, string>,
     selected: '', busy: false, done: 0, total: 512, sampleTotal: 512, completed: 0, count: 0, current: '', report: null as RaidReport | null,
     error: '', phase: '预测团战胜率与耗时，或搜索期望通关时间较短的阵容', stale: false,
@@ -100,7 +102,7 @@ export function createRaidPredictor(game: GameAdapter) {
   async function optimize(region: string) {
     if (state.busy) return;
     stop(); state.busy = true; state.optimizing = true; state.error = ''; state.done = 0; state.current = region; state.task = 'optimize'; state.candidates = []; state.finishedAt = 0;
-    state.phase = '筛选自己的精灵与实际 NPC 队友，按双方期望总出招数比较';
+    state.phase = '读取全部好友和 NPC，按双方期望总出招数比较';
     const abort = controller = new AbortController();
     try {
       timer = setTimeout(() => fail('团战配队搜索超时，请重试'), 180000);
@@ -109,6 +111,12 @@ export function createRaidPredictor(game: GameAdapter) {
       state.entries = data.entries; state.inputs = data.inputs; state.selected = region;
       const entry = data.entries.find(e => e.region === region);
       if (!entry) throw new Error('今天没有这场团战，请重新读取');
+      if (entry.input?.source === 'active') throw new Error('本场团战正在进行，可先预测原阵容；结束后再搜索新配队');
+      entry.offers = await collectRaidOffers(document, region, data.raw, () => !abort.signal.aborted);
+      if (rawSave() !== data.raw) {
+        const current = JSON.parse(rawSave()), before = JSON.parse(data.raw);
+        if (JSON.stringify(current.raids?.bots?.[region]) !== JSON.stringify(before.raids?.bots?.[region])) throw new Error('读取期间 NPC 队伍变化，请重试');
+      }
       const source = await fetchEngineSource(abort.signal);
       if (abort.signal.aborted) return;
       worker = new Worker(); worker.onerror = () => fail('团战配队搜索进程失败');
@@ -120,22 +128,22 @@ export function createRaidPredictor(game: GameAdapter) {
         if (msg.type === 'candidate') {
           const i = state.candidates.findIndex(c => c.key === msg.candidate.key);
           if (i < 0) state.candidates.push(msg.candidate); else state.candidates[i] = msg.candidate;
-          state.phase = msg.candidate.validation ? `正在独立复核候选 · 已完成 ${state.candidates.filter(c => c.validation).length} 组，每组 512 次` : `正在初步筛选 · 已完成 ${state.candidates.length} 组，每组 32 次`;
+          state.phase = msg.candidate.validation ? `正在独立复核候选 · 已完成 ${state.candidates.filter(c => c.validation).length} 组，每组 1024 次` : `正在初步筛选 · 已完成 ${state.candidates.length} 组，每组 128 次`;
         }
         if (msg.type === 'optimized') {
           const plan: RaidPlan = msg.plan;
           state.finishedAt = Date.now(); state.plans[region] = plan; state.reports[region] = plan.report; state.report = plan.report;
-          stop(); state.stale = raidPlanContext(rawSave(), entry) !== plan.context;
+          stop(); state.stale = entry.date !== raidDate(now()) || raidPlanContext(rawSave(), entry) !== plan.context;
           state.phase = `搜索完成 · 比较 ${plan.candidates} 组阵容，按包含失败重试的期望出招数排序`;
         }
       };
-      worker.postMessage(JSON.parse(JSON.stringify({ source, save: data.raw, now: data.time, optimize: entry })));
+      worker.postMessage(JSON.parse(JSON.stringify({ source, save: data.raw, now: data.time, optimize: entry, options: { ...search } })));
     } catch (e) { if (!abort.signal.aborted) fail((e as Error).message); }
   }
   const off = game.bus.on('sample', () => {
     if (state.plans[state.selected] && !state.busy) {
       try { const entry = state.entries.find(e => e.region === state.selected)!;
-        state.stale = raidPlanContext(rawSave(), entry) !== state.plans[state.selected].context;
+        state.stale = entry.date !== raidDate(now()) || raidPlanContext(rawSave(), entry) !== state.plans[state.selected].context;
       } catch { state.stale = true; }
       return;
     }
@@ -150,7 +158,7 @@ export function createRaidPredictor(game: GameAdapter) {
       }
     } catch { state.stale = true; }
   });
-  return { state, load: () => load(), run: () => load('all'), runOne: () => load('one'), optimize,
+  return { state, search, load: () => load(), run: () => load('all'), runOne: () => load('one'), optimize,
     select(region: string) { state.selected = region; state.report = state.reports[region] || null; },
     cancel() { stop(); state.phase = '已取消预测'; }, dispose() { stop(); off(); } };
 }

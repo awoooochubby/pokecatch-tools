@@ -14,7 +14,7 @@ const regions: Record<string, string> = { kanto: '关都', johto: '城都', hoen
 const options = computed(() => s.entries.map(i => ({ value: i.region, label: `${regions[i.region]} · ${i.boss ? pokemonName(i.boss) : '首领未读取'}` })));
 const pct = (value: number) => `${(value * 100).toFixed(1)}%`;
 const orderRange = (report: NonNullable<typeof s.report>) => report.orderResults ? `${pct(Math.min(...report.orderResults.map(r => r.mean)))}–${pct(Math.max(...report.orderResults.map(r => r.mean)))}` : pct(report.win.mean);
-const blocked = computed(() => s.busy || r.tracker.state.running || r.tracker.state.analysing || r.tracker.state.raidBusy);
+const blocked = computed(() => s.busy || r.hatchery.state.busy || r.tracker.state.running || r.tracker.state.analysing || r.tracker.state.raidBusy);
 const reports = computed(() => Object.values(s.reports));
 function download() { if (!reports.value.length) return;
   const url = URL.createObjectURL(new Blob([JSON.stringify({ reports: s.reports, plans: s.plans }, null, 2)], { type: 'application/json' }));
@@ -28,11 +28,12 @@ function download() { if (!reports.value.length) return;
       <NButton block secondary :loading="s.busy && s.task === 'loading'" :disabled="blocked" data-testid="raid-load" @click="raid.load">{{ s.entries.length ? '刷新今日团战与原生队伍' : '读取今日团战' }}</NButton>
       <p v-if="r.tracker.state.running" class="flow-message stale">先停止自动追踪，再读取团战配置。</p>
       <p class="hint" v-if="s.task === 'loading'">{{ s.phase }}</p>
+      <div class="form-section"><label>搜索范围</label><NSelect v-model:value="raid.search.mode" :options="[{ value: 'balanced', label: '分轮搜索：全部队友组合＋改进己方＋再搜队友' }, { value: 'exhaustive', label: '穷举：池内全部己方顺序 × 全部队友组合（较慢）' }]" :to="overlayTarget" :disabled="blocked" aria-label="团战搜索模式" /><NSelect v-model:value="raid.search.ownLimit" :options="[{ value: 8, label: '原生评分前 8 只＋当前配队基线' }, { value: 16, label: '原生评分前 16 只＋当前配队基线' }, { value: 0, label: '整个 Box（可能耗时很长）' }]" :to="overlayTarget" :disabled="blocked" aria-label="团战己方候选范围" /><p class="hint">好友和 NPC 均不按评分截断。己方候选池内比较合法双宠的两种顺序；当前配置额外保留。每组初测 128 次，竞争候选最多 8 组及当前配置各独立复核 1024 次。穷举覆盖的是阵容，概率仍用抽样估计。</p></div>
       <div v-if="s.entries.length" class="raid-setup-list">
         <div v-for="entry in s.entries" :key="entry.region" class="task-card" data-testid="raid-row" :data-region="entry.region">
           <div class="split"><strong>{{ regions[entry.region] }} · {{ entry.boss ? pokemonName(entry.boss) : '首领未读取' }}</strong><NTag size="tiny" :type="entry.done ? 'default' : entry.input ? 'success' : 'warning'">{{ entry.done ? '今日已捕获' : entry.input ? '原配队已就绪' : '待配置' }}</NTag></div>
-          <p class="hint">{{ entry.error || (entry.input ? '可以直接预测原配队；自动搜索会另行比较己方与 NPC 组合。' : '自动搜索可从 Box 和实际 NPC 中选队。') }}</p>
-          <NButton size="small" secondary :disabled="blocked || entry.done" :data-testid="`raid-optimize-${entry.region}`" @click="raid.optimize(entry.region)">搜索更快的配队 →</NButton>
+          <p class="hint">{{ entry.input?.source === 'active' ? '本场正在进行，可预测原阵容；结束后才能读取队友选择框并搜索新配队。' : entry.error || (entry.input ? '可以直接预测原配队；自动搜索会另行比较己方与全部好友／NPC 组合。' : '自动搜索可从 Box 和全部可用队友中选队。') }}</p>
+          <NButton size="small" secondary :disabled="blocked || entry.done || entry.input?.source === 'active'" :data-testid="`raid-optimize-${entry.region}`" @click="raid.optimize(entry.region)">搜索更快的配队 →</NButton>
         </div>
         <div class="form-section"><label>预测原配队</label><NSelect :value="s.selected" :options="options" :to="overlayTarget" :disabled="s.busy" aria-label="团体战预测目标" @update:value="raid.select" /><div class="actions"><NButton type="primary" :disabled="blocked || !s.inputs.some(input => input.region === s.selected)" @click="raid.runOne">预测所选场次</NButton><NButton secondary :disabled="blocked || !s.inputs.length" data-testid="raid-run" @click="raid.run">预测全部团体战</NButton></div></div>
       </div>

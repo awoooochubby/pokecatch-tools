@@ -1,3 +1,4 @@
+import { installRaidOfferPickers } from './raid-offer-fixture.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { build } from 'esbuild';
@@ -43,6 +44,7 @@ try {
       window.raidPageOpens++; document.querySelector('#screen-adventure').classList.remove('active'); document.querySelector('#screen-raid').classList.add('active');
     };
   });
+  await page.evaluate(installRaidOfferPickers);
   const raw = JSON.stringify(save);
   await page.addScriptTag({ content: readFileSync('pokecatch-tools.user.js', 'utf8') });
   await page.getByRole('button', { name: '关闭刷图浮窗', exact: true }).click();

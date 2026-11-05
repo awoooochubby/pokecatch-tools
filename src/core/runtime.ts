@@ -1,3 +1,4 @@
+import { createHatchery } from '../modules/hatchery';
 import { reactive } from 'vue';
 import { GameAdapter } from './game';
 import { Store } from './storage';
@@ -22,6 +23,7 @@ export function createRuntime() {
   const nodeExperience=createForecastModule(game);
   const tracker = createTracker(game, store);
   const raid = createRaidPredictor(game);
+  const hatchery = createHatchery(game, store, { available: () => !raid.state.busy && tracker.uiAvailable(), withUI: fn => tracker.withUI(fn) });
   const cloudSave = createCloudSaver(game, store);
   const modules: Record<'experience' | 'enemies' | 'farming', FeatureModule> = { experience, enemies, farming };
   function setEnabled(id: 'experience' | 'enemies' | 'farming', enabled: boolean) {
@@ -34,9 +36,9 @@ export function createRuntime() {
   game.start();
   const flush = () => { experience.persist(); farming.persist(); };
   window.addEventListener('pagehide', flush);
-  return { store, game, settings, status, experience, enemies, counters, farming, forecast, nodeExperience, tracker, raid, cloudSave, setEnabled,
+  return { store, game, settings, status, experience, enemies, counters, farming, forecast, nodeExperience, tracker, raid, hatchery, cloudSave, setEnabled,
     saveSettings() { store.set('settings', settings); },
-    dispose() { cloudSave.dispose(); experience.stop(); enemies.stop(); farming.stop(); forecast.dispose();nodeExperience.dispose(); tracker.dispose(); raid.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
+    dispose() { hatchery.dispose(); cloudSave.dispose(); experience.stop(); enemies.stop(); farming.stop(); forecast.dispose();nodeExperience.dispose(); tracker.dispose(); raid.dispose(); game.stop(); counters.dispose(); window.removeEventListener('pagehide', flush); },
   };
 }
 export type Runtime = ReturnType<typeof createRuntime>;

@@ -15,4 +15,7 @@ export interface RaidReport {
 export interface RaidEntry {
   region: string; boss: number; date: string; done: boolean;
   input: RaidInput | null; error: string;
+  offers?: RaidOffer[];
 }
+
+export interface RaidOffer { key: string; name: string; friend: boolean; mons: RaidAlly[]; before: string[]; }

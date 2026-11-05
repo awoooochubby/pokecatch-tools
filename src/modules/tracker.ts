@@ -1,3 +1,4 @@
+import { collectRaidOffers } from '../raid/offers';
 import { reactive } from 'vue';
 import Worker from '../tracker/worker?worker&inline';
 import PredictionWorker from '../tracker/prediction-worker?worker&inline';
@@ -14,6 +15,8 @@ import { readRaidCatalog, raidDate } from '../raid/read';
 import { pokemonName } from '../core/pokemon';
 import type { RaidEntry } from '../raid/types';
 
+const combatKey = (mons: import('../raid/types').RaidAlly[]) => JSON.stringify(mons.map(m => [m.uid, m.id, m.level, !!m.shiny, m.rank || 0, m.statMult ?? 1, m.bot]));
+
 export function createTracker(game: GameAdapter, store: Store, navigation = new HuntNavigation()) {
   const saved = store.get<Partial<TrackerPrefs>>('tracker', {});
   const prefs = reactive<TrackerPrefs>({ targets: Array.isArray(saved.targets) ? saved.targets.filter(Number.isInteger) : [],
@@ -28,6 +31,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
   let timeout: ReturnType<typeof setTimeout> | undefined, serial = 0, lastRequest = 0, lastTravel = 0;
   let team = '', disposed = false, acting = false, source = '', actionEpoch = 0;
   let predictor: globalThis.Worker | null = null, predictionTimer: ReturnType<typeof setTimeout> | undefined;
+  let offersController: AbortController | null = null;
   let rejectPrediction: ((e: Error) => void) | null = null;
   const refusedRaids = new Map<string, string>();
   const completed = new Set<number>();
@@ -38,7 +42,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
   const teamKey = (s: any) => JSON.stringify(s.team.map(String));
   function log(text: string) { state.logs.unshift({ time: Date.now(), text }); state.logs.splice(60); }
   function persist() { store.set('tracker', prefs); }
-  function cancelPrediction() { predictor?.terminate(); predictor = null; clearTimeout(predictionTimer); state.analysing = false;
+  function cancelPrediction() { offersController?.abort(); offersController = null; predictor?.terminate(); predictor = null; clearTimeout(predictionTimer); state.analysing = false;
     rejectPrediction?.(new Error('模拟已取消')); rejectPrediction = null; }
   function stop(reason = '已停止自动切图，游戏继续按原规则运行') {
     actionEpoch++; cancelPrediction();
@@ -61,12 +65,12 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     }
   }
   async function loadRaids() {
-    if (state.running || state.raidBusy || !state.catalog) return;
+    if (state.running || state.raidBusy || acting || !state.catalog) return;
     state.raidBusy = true; state.error = ''; const epoch = actionEpoch;
     try {
       await navigation.openRaids(() => !disposed && epoch === actionEpoch);
       state.raids = readRaidCatalog(document, rawSave(), now());
-      state.notice = `已读取 ${state.raids.length} 场今日团战；任务轮到时再配置自己的精灵和 NPC 队友`;
+      state.notice = `已读取 ${state.raids.length} 场今日团战；任务轮到时再配置自己的精灵及好友／NPC 队友`;
       state.catalog.targets = state.catalog.targets.filter(t => t.kind !== 'raid'); mergeRaids(state.catalog);
     } catch (e) { state.error = (e as Error).message; }
     finally { state.raidBusy = false; navigation.showAdventure(); }
@@ -76,7 +80,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     return new Promise((resolve, reject) => {
       rejectPrediction = reject; const active = predictor = new PredictionWorker();
       const finish = () => { clearTimeout(predictionTimer); active.terminate(); if (predictor === active) predictor = null; state.analysing = false; rejectPrediction = null; };
-      predictionTimer = setTimeout(() => { finish(); reject(new Error('模拟超时，请减少候选或重新读取')); }, 180000);
+      predictionTimer = setTimeout(() => { finish(); reject(new Error('模拟超时，请减少候选或重新读取')); }, payload.raid ? 1800000 : 180000);
       active.onerror = () => { finish(); reject(new Error('战斗模拟进程失败')); };
       active.onmessage = event => {
         if (predictor !== active || disposed) return;
@@ -93,18 +97,25 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     return job;
   }
   async function predict(id: number) {
-    if (state.running || state.analysing || !source) return;
+    if (state.running || state.analysing || state.raidBusy || acting || !source) return;
     state.error = '';
     try {
       const job = jobFor(id), s = JSON.parse(rawSave());
       if (job.kind === 'raid') {
-        const entry = state.raids.find(r => r.region === job.destination.raid)!;
+        state.raidBusy = true; state.analysing = true; state.progress = '正在读取全部可用好友和 NPC';
+        const abort = offersController = new AbortController(), active = () => !disposed && !abort.signal.aborted;
+        await navigation.openRaids(active);
+        const entry = readRaidCatalog(document, rawSave(), now()).find(r => r.region === job.destination.raid);
+        if (!entry) throw new Error('今日团战未读取');
+        entry.offers = await collectRaidOffers(document, entry.region, rawSave(), active);
+        state.raids = state.raids.map(r => r.region === entry.region ? entry : r);
         state.raidPlans[entry.region] = await prediction<RaidPlan>({ raid: JSON.parse(JSON.stringify(entry)), team: prefs.teams?.[id] });
       } else {
         const selected = huntTeam(s, prefs, job); validateTeam(s, selected);
         state.predictions[id] = await prediction<HuntPrediction>({ job, team: selected });
       }
     } catch (e) { if (!disposed) state.error = (e as Error).message; }
+    finally { state.raidBusy = false; state.analysing = false; offersController = null; }
   }
   async function runRaid(job: HuntJob) {
     const reg = job.destination.raid!, epoch = actionEpoch, active = () => state.running && actionEpoch === epoch && !disposed;
@@ -117,6 +128,8 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     const entry = readRaidCatalog(document, rawSave(), now()).find(r => r.region === reg);
     if (!entry || entry.boss !== job.destination.boss || entry.date !== job.destination.date) throw new Error('今日团战目标已变化，请停止后重新读取');
     if (entry.done) { state.raids = state.raids.map(r => r.region === reg ? entry : r); return; }
+    entry.offers = await collectRaidOffers(document, reg, rawSave(), active);
+    state.raids = state.raids.map(r => r.region === reg ? entry : r);
     let plan = state.raidPlans[reg], context = raidPlanContext(rawSave(), entry);
     if (refusedRaids.get(reg) === context) { state.phase = '该团战阵容尚未达标，等待队伍升级或条件变化'; return; }
     if (!plan || plan.context !== context || JSON.stringify(prefs.teams?.[job.id] || []) !== JSON.stringify(plan.report.input.mine) && prefs.teams?.[job.id]?.length) {
@@ -140,7 +153,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     // generation order, not the visual pick order. Never enter a guessed lineup.
     const exact = readRaidCatalog(document, rawSave(), now()).find(r => r.region === reg)?.input;
     if (!exact || JSON.stringify(exact.mine.map(String)) !== JSON.stringify(plan.report.input.mine.map(String))
-      || JSON.stringify(exact.allies) !== JSON.stringify(plan.report.input.allies)) throw new Error('团战实际配置与验证阵容不同，请重新读取');
+      || ![plan.report.input.allies, plan.report.input.alternateAllies].filter(Boolean).some(allies => combatKey(exact.allies) === combatKey(allies!))) throw new Error('团战实际配置与验证阵容不同，请重新读取');
     s = JSON.parse(rawSave());
     if (s.adv.battle) { navigation.showAdventure(); state.phase = '队伍已配好，等待当前战斗结算后进入团战'; return; }
     navigation.enterRaid(reg);
@@ -285,6 +298,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     } catch (e) { if (!abort.signal.aborted) { cancelWorker(); fail((e as Error).message); } }
   }
   function start() {
+    if (acting || state.analysing || state.raidBusy) { state.error = '助手正在操作游戏界面，请稍后启动追踪'; return; }
     try {
       if (!state.catalog || !worker) throw new Error('请先读取目标');
       if (!prefs.targets.length) throw new Error('请先选择至少一个目标');
@@ -319,7 +333,12 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
   });
   const lostTab = (e: StorageEvent) => { if (e.key === 'pokecatch-tab' && state.running) stop('游戏切换到了另一个标签页，请在该页开始追踪'); };
   window.addEventListener('storage', lostTab);
-  return { state, prefs, load, loadRaids, start, predict, cancelPrediction, stop() { log('手动停止'); stop(); }, persist,
+  return { state, prefs,
+    uiAvailable: () => !acting && !state.analysing && !state.raidBusy,
+    async withUI<T>(fn: () => Promise<T>): Promise<T> {
+      if (acting || state.analysing || state.raidBusy) throw new Error('追踪器正在操作原生界面，请稍后收蛋');
+      acting = true; try { return await fn(); } finally { acting = false; }
+    }, load, loadRaids, start, predict, cancelPrediction, stop() { log('手动停止'); stop(); }, persist,
     addMissing() { if (state.running || !state.catalog) return;
       const before = prefs.targets.length; prefs.targets = completionQueue(state.catalog.targets, prefs.targets); persist();
       state.notice = `已新增 ${prefs.targets.length - before} 个当前可捕捉的缺失目标；这是一次性补全队列，未加入未解锁／仅进化、孵蛋、交换获得的精灵`; },

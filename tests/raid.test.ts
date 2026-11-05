@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { referenceEngine } from './reference-engine';
-import { predictRaid } from '../src/raid/engine';
+import { predictRaid, createRaidRunner } from '../src/raid/engine';
 import { raidDate } from '../src/raid/read';
 import { raidContext } from '../src/modules/raid';
 import type { RaidInput } from '../src/raid/types';
@@ -87,6 +87,15 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生团体战胜率', () => 
     expect(report.moves.total.mean).toBeCloseTo((allyMoves + enemyMoves) / trials, 10);
     expect(report.expectedClearMoves).toBeCloseTo((allyMoves + enemyMoves) / wins, 10);
   }, 30000);
+  it('搜索复用私有引擎时，换候选再换回仍与全新引擎逐种子一致', async () => {
+    const raw = JSON.stringify(s), run = await createRaidRunner(source, raw, now);
+    const first = await run(input, 16, () => {}, seed);
+    const changed = { ...input, mine: [...input.mine].reverse(), allies: [...input.allies].reverse(), boss: 130, weather: native.Raids.sceneOf(130, input.region, input.date).weather || null };
+    const second = await run(changed, 16, () => {}, seed);
+    const independent = await predictRaid(source, raw, now, changed, 16, () => {}, seed);
+    expect(second).toEqual(independent); expect(await run(input, 16, () => {}, seed)).toEqual(first);
+    expect(JSON.stringify(s)).toBe(raw);
+  }, 15000);
   it('缺少队友、重复参战 UID、天气不一致与跨日快照均拒绝推算', async () => {
     const raw = JSON.stringify(s);
     await expect(predictRaid(source, raw, now, { ...input, allies: [] }, 1)).rejects.toThrow('不完整');
