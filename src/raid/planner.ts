@@ -4,7 +4,8 @@ import type { RaidEntry, RaidInput, RaidReport } from '../raid/types';
 import { validateTeam } from '../core/teams';
 import { clearTimeScore } from './time';
 
-export interface RaidPlan { region: string; boss: number; date: string; picks: string[]; report: RaidReport; candidates: number; context: string; }
+export interface RaidCandidateAnalysis { key: string; picks: string[]; screening: RaidReport; validation?: RaidReport; }
+export interface RaidPlan { region: string; boss: number; date: string; picks: string[]; report: RaidReport; candidates: number; context: string; analysis: RaidCandidateAnalysis[]; ownCount: number; allyPairCount: number; chosenKey: string; }
 export const raidIds: Record<string, number> = { kanto: -1, johto: -2, hoenn: -3, sinnoh: -4 };
 export function raidPlanContext(raw: string, entry: RaidEntry) {
   const s = JSON.parse(raw);
@@ -13,7 +14,7 @@ export function raidPlanContext(raw: string, entry: RaidEntry) {
     bots: s.raids?.bots?.[entry.region], buffs: s.buffs, speed: s.adv.speed, autoSwitch: s.autoSwitch });
 }
 export async function optimizeRaid(source: string, raw: string, now: number, entry: RaidEntry, fixed: string[] | undefined,
-  progress: (done: number, total: number) => void = () => {}) : Promise<RaidPlan> {
+  progress: (done: number, total: number) => void = () => {}, onCandidate: (candidate: RaidCandidateAnalysis) => void = () => {}) : Promise<RaidPlan> {
   if (entry.done || !entry.boss) throw new Error('今日团战已结束或首领尚未揭晓');
   const original = JSON.parse(raw);
   const { t } = await isolatedEngine(source, now, () => .5, undefined, ['Raids', 'LegendZones']);
@@ -49,22 +50,28 @@ export async function optimizeRaid(source: string, raw: string, now: number, ent
     }
   });
   if (!own.length) throw new Error('没有可用的团战参战精灵');
-  const choices: Array<{ report: RaidReport; keys: string[] }> = [];
+  const choices: Array<{ report: RaidReport; keys: string[]; key: string }> = [];
+  const analysis: RaidCandidateAnalysis[] = [];
   const total = own.length * pairs.length + Math.min(3, own.length * pairs.length);
   for (const mine of own) for (const pair of pairs) {
     const input: RaidInput = { region: entry.region, boss: entry.boss, date: entry.date, mine, allies: pair.mons, weather, source: 'configured' };
-    choices.push({ keys: pair.keys, report: await predictRaid(source, raw, now, input, 32) }); progress(choices.length, total);
+    const report = await predictRaid(source, raw, now, input, 32), key = `candidate-${choices.length + 1}`;
+    choices.push({ keys: pair.keys, report, key });
+    const row = { key, picks: pair.keys, screening: report }; analysis.push(row); onCandidate(row);
+    progress(choices.length, total);
   }
   choices.sort((a, b) => clearTimeScore(a.report) - clearTimeScore(b.report));
   // Re-evaluate the fastest three with fresh seeds. The cost is animated moves
   // from both sides including failed runs: E[moves to win] = E[attempt]/P(win).
   const finalists = [];
   for (const [index, candidate] of choices.slice(0, 3).entries()) {
-    finalists.push({ keys: candidate.keys, report: await predictRaid(source, raw, now, candidate.report.input, 512, () => {}, 9835491 + index * 104729) });
+    const report = await predictRaid(source, raw, now, candidate.report.input, 512, () => {}, 9835491 + index * 104729);
+    finalists.push({ key: candidate.key, keys: candidate.keys, report });
+    const row = analysis.find(row => row.key === candidate.key)!; row.validation = report; onCandidate(row);
     progress(choices.length + index + 1, total);
   }
   finalists.sort((a, b) => clearTimeScore(a.report) - clearTimeScore(b.report));
   const best = finalists[0], report = best.report;
   progress(total, total);
-  return { region: entry.region, boss: entry.boss, date: entry.date, picks: best.keys, report, candidates: choices.length, context: raidPlanContext(raw, entry) };
+  return { region: entry.region, boss: entry.boss, date: entry.date, picks: best.keys, report, candidates: choices.length, context: raidPlanContext(raw, entry), analysis, ownCount: own.length, allyPairCount: pairs.length, chosenKey: best.key };
 }

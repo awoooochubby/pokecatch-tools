@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useSelectTarget } from '../ui/select-target';
+const overlayTarget = useSelectTarget();
 import { computed, ref, watch, nextTick } from 'vue';
 import { NAlert, NButton, NCollapse, NCollapseItem, NInput, NInputNumber, NProgress, NSelect, NSwitch, NTag } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
@@ -7,6 +9,9 @@ import { dex, pokemonName } from '../core/pokemon';
 import { chapterLabel } from '../core/chapters';
 import { estimateWork, parseCustomTargets, SAMPLE_BUDGET } from '../simulation/planning';
 import TeamPlanner from './TeamPlanner.vue';
+import AnalysisFlow from './AnalysisFlow.vue';
+const taskKind = ref('single');
+const counterFlow = ref<InstanceType<typeof AnalysisFlow>>();
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
 const c = r.counters, s = c.state;
 type Preferences = { mode: string; candidates: string[]; targets: string[]; custom: string; trials: number; seed: number; full: boolean; maxLoss: number; minWin: number; auto: Options['autoSwitch']; snapshotAt: number; snapshotChapter?: number; enemySource?: string };
@@ -23,7 +28,6 @@ const enemySource=ref(['current','chapter','manual','diagnostic'].includes(saved
 const manualId=ref<number|null>(null), manualLevel=ref(50);
 const advanced=ref(false);
 const pickEl=ref<HTMLElement>(),reasonEl=ref<HTMLElement>(),routeHeadingEl=ref<HTMLElement>();
-watch(()=>s.phase,async phase=>{if(phase!=='计算完成')return;await nextTick();if(s.phase==='计算完成')(s.report?.options.mode==='matrix'?pickEl.value:reasonEl.value||routeHeadingEl.value)?.scrollIntoView({block:'start',behavior:'smooth'});});
 watch([mode,candidates,targets,custom,trials,seed,full,maxLoss,minWin,auto,snapshotAt,snapshotChapter,enemySource], () => {
   r.store.set('counterPreferences', { mode:mode.value,candidates:candidates.value,targets:targets.value,custom:custom.value,trials:trials.value,seed:seed.value,full:full.value,maxLoss:maxLoss.value,minWin:minWin.value,auto:auto.value,snapshotAt:snapshotAt.value,snapshotChapter:snapshotChapter.value,enemySource:enemySource.value });
 }, {deep:true});
@@ -88,30 +92,28 @@ const bottleneck=computed(()=>{if(!culprit.value)return null;const from=Math.max
 const counterThreatKey=computed(()=>bottleneck.value?.targetKey&&s.catalog?.targets.some(t=>t.key===bottleneck.value?.targetKey)?bottleneck.value.targetKey:culprit.value?.targetKey);
 const commonHits=(row:typeof results.value[number])=>Object.entries(row.hits).sort((a,b)=>b[1]-a[1])[0]?.[0];
 function diagnose(){if(!s.catalog||s.stale)return;const order=s.catalog.activeOrder.filter(uid=>s.catalog!.candidates.some(m=>m.uid===uid&&m.eligible));c.run({...options(),mode:'route',candidateUids:order,start:'current',autoSwitch:'current'},[]);}
-function counterForFailure(){const key=counterThreatKey.value;if(!key||!s.catalog?.targets.some(t=>t.key===key))return;enemySource.value='diagnostic';mode.value='matrix';targets.value=[key];candidates.value=s.catalog.candidates.filter(m=>m.eligible).map(m=>m.uid);custom.value='';full.value=true;}
+function counterForFailure(){counterFlow.value?.showSetup();const key=counterThreatKey.value;if(!key||!s.catalog?.targets.some(t=>t.key===key))return;enemySource.value='diagnostic';mode.value='matrix';targets.value=[key];candidates.value=s.catalog.candidates.filter(m=>m.eligible).map(m=>m.uid);custom.value='';full.value=true;}
 const baseline=computed(()=>(s.report?.results||[]).filter(row=>row.target===recommendation.value?.target&&s.catalog?.activeOrder.includes(row.uid)&&row.level===s.catalog.candidates.find(m=>m.uid===row.uid)?.level).sort((a,b)=>b.win.low-a.win.low||a.loss.high-b.loss.high)[0]);
 </script>
 <template>
   <h2>本副本怎么打更省血</h2>
   <p class="hint">先读取你正在打的副本。可以检查队伍能否走完整个副本，也可以给这场战斗找一只更稳的对策。</p>
   <div class="actions"><NButton type="primary" secondary :disabled="s.busy" data-testid="load-box" @click="c.load">{{ s.catalog ? '更新副本敌情' : '读取副本敌情与 Box' }}</NButton><NButton v-if="s.busy" size="small" @click="c.cancel">取消</NButton></div>
-  <NAlert v-if="s.error" type="error" :show-icon="false" style="margin:12px 0">{{ s.error }}</NAlert>
+  <p class="hint" data-testid="counter-phase" aria-live="polite">{{ s.phase }}</p>
+  <NAlert v-if="s.error && !s.catalog" type="error" :show-icon="false" style="margin:12px 0">{{ s.error }}</NAlert>
   <NAlert v-if="s.stale" type="warning" :show-icon="false" style="margin-top:12px" data-testid="counter-stale">副本进度、战斗或队伍已变化。目标保持不变，下面的结果对应读取时快照；重新配队会自动更新状态。</NAlert>
   <template v-if="s.catalog">
     <div class="counter-context section-card"><strong data-testid="counter-chapter">{{ chapterLabel(s.catalog.chapter) }}</strong><small>{{ chapterLabel(s.catalog.nodeName || '正在走图') }} · 等级上限 {{ s.catalog.cap }} · 读取于 {{ new Date(s.catalog.capturedAt).toLocaleTimeString() }}</small></div>
     <p v-if="s.catalog.dungeon" class="hint" data-testid="dungeon-progress">当前进度：{{ chapterLabel(s.catalog.dungeon.stages.find(stage=>stage.chapter===s.progressChapter)?.name||s.catalog.dungeon.stages.find(stage=>stage.chapter===s.catalog!.dungeon!.stage)?.name||'') }} · 第 {{ s.progressNode+1 }} 处。副本目标不会随过场重置。</p>
-    <TeamPlanner :runtime="r" />
+    <div class="feature-switch"><NButton :type="taskKind==='single'?'primary':'default'" secondary :disabled="s.busy" @click="taskKind='single';s.error=''">单体对策／路线检查</NButton><NButton :type="taskKind==='team'?'primary':'default'" secondary data-testid="open-team-planner" :disabled="s.busy" @click="taskKind='team';s.error=''">指定目标配队</NButton></div>
+    <TeamPlanner v-if="taskKind==='team'" :runtime="r" />
+    <AnalysisFlow v-if="taskKind==='single'" ref="counterFlow" title="对策与路线" :busy="s.busy && taskKind==='single'" :has-result="!!(s.report || route)" :result-key="s.report || s.routeReport" :error="s.error" :stale="s.stale" :phase="s.phase" :progress="s.total ? s.completed / s.total * 100 : 0" :cancelled="s.phase.includes('取消')">
+    <template #setup>
     <NButton block secondary :disabled="s.busy || s.stale" data-testid="diagnose-route" @click="diagnose">检查当前队伍：能否走完剩余副本？</NButton>
-    <template v-if="route">
-      <h3 ref="routeHeadingEl">{{ route.win.mean === 1 ? '这批模拟均走完了剩余副本' : '这支队伍存在中途战败风险' }}</h3>
-      <p class="hint">{{ route.order.map(candidateLabel).join(' / ') }}<br>{{ route.trials }} 次模拟，走完剩余副本约 {{ pct(route.win.mean) }}。{{ s.routeReport?.options.start==='current'?'使用读取时的 HP 和状态。':'使用满血、无异常状态。' }}途中中心照常治疗，等级保持读取时状态。</p>
-      <div v-if="culprit" ref="reasonEl" class="counter-reason" data-testid="route-reason"><strong>最常见战败位置：{{ culprit.id ? pokemonName(culprit.id) : culprit.label }}</strong><p>{{ route.trials }} 次模拟中，有 {{ culprit.count }} 次在这里战败。<template v-if="culprit.nextCenter">没能到达下一处治疗点（{{ chapterLabel(culprit.nextCenter) }}），后面还隔着 {{ culprit.battlesToCenter }} 场战斗。</template><template v-else>没能走到副本结束；后面没有其他治疗点。</template></p><p v-if="bottleneck">这段路最耗血的是 {{ pokemonName(bottleneck.id!) }}，平均累计消耗队伍 {{ pct(bottleneck.wear) }} 的最大 HP。<template v-if="bottleneck.node!==culprit.node">建议优先降低它造成的战损，给后面的战斗留出血量。</template></p><NButton v-if="s.catalog.targets.some(t=>t.key===counterThreatKey)" size="small" type="primary" secondary :disabled="s.busy" data-testid="counter-culprit" @click="counterForFailure">为耗血来源找低损对策 →</NButton></div>
-      <div v-for="threat in route.threats?.slice(0,3)" :key="`${threat.node}:${threat.id}`" class="split"><span>{{ threat.id ? pokemonName(threat.id) : threat.label }}</span><small>平均消耗队伍 {{ pct(threat.wear) }} 的最大 HP</small></div>
-    </template>
     <h3>给哪只敌人找对策</h3>
     <div class="actions"><NButton size="small" :type="enemySource==='current'?'primary':'default'" :disabled="s.busy" @click="enemySource='current';mode='matrix'">这场战斗</NButton><NButton size="small" :type="enemySource==='chapter'?'primary':'default'" :disabled="s.busy" @click="enemySource='chapter';mode='matrix'">副本后续</NButton><NButton size="small" :type="enemySource==='manual'?'primary':'default'" :disabled="s.busy" @click="enemySource='manual';mode='matrix'">指定精灵</NButton></div>
-    <template v-if="enemySource==='manual'"><NSelect v-model:value="manualId" :options="speciesOptions" filterable :to="false" :disabled="s.busy" placeholder="输入名字，例如雪妖女" aria-label="指定精灵名称" style="margin-top:10px" /><div class="setting-row"><span>敌人等级</span><NInputNumber v-model:value="manualLevel" :min="1" :max="100" :precision="0" style="width:120px" /></div></template>
-    <template v-else><NSelect :value="targets[0] || null" :options="targetOptions" :to="false" :disabled="s.busy" placeholder="选择副本敌人" aria-label="副本对策目标" style="margin-top:10px" @update:value="targets=[$event];mode='matrix'" /><p class="hint" data-testid="enemy-context">{{ enemySource==='current' && currentTargets.length ? '来自读取时正在进行的这一场战斗，按其 HP 重新开战单挑。' : '这里是副本后续可能遭遇，不是当前已经在场的敌人。野怪按区域最高等级做准备。' }}<template v-if="s.catalog.randomTrainers">另有 {{ s.catalog.randomTrainers }} 场随机训练家，尚未交战时不能确定队伍；上面的副本检查会按游戏规则生成。</template></p></template>
+    <template v-if="enemySource==='manual'"><NSelect v-model:value="manualId" :options="speciesOptions" filterable :to="overlayTarget" :disabled="s.busy" placeholder="输入名字，例如雪妖女" aria-label="指定精灵名称" style="margin-top:10px" /><div class="setting-row"><span>敌人等级</span><NInputNumber v-model:value="manualLevel" :min="1" :max="100" :precision="0" style="width:120px" /></div></template>
+    <template v-else><NSelect :value="targets[0] || null" :options="targetOptions" :to="overlayTarget" :disabled="s.busy" placeholder="选择副本敌人" aria-label="副本对策目标" style="margin-top:10px" @update:value="targets=[$event];mode='matrix'" /><p class="hint" data-testid="enemy-context">{{ enemySource==='current' && currentTargets.length ? '来自读取时正在进行的这一场战斗，按其 HP 重新开战单挑。' : '这里是副本后续可能遭遇，不是当前已经在场的敌人。野怪按区域最高等级做准备。' }}<template v-if="s.catalog.randomTrainers">另有 {{ s.catalog.randomTrainers }} 场随机训练家，尚未交战时不能确定队伍；上面的副本检查会按游戏规则生成。</template></p></template>
     <div class="split"><strong>在哪些精灵里找</strong><small>{{ candidates.length }} 只候选</small></div>
     <div class="actions" style="margin:10px 0"><NButton size="small" :disabled="s.busy" data-testid="restore-team" @click="candidates=s.catalog.activeOrder.filter(uid=>s.catalog!.candidates.some(m=>m.uid===uid&&m.eligible));auto='current'">当前出战队伍</NButton><NButton size="small" :disabled="s.busy" @click="candidates=s.catalog.candidates.filter(m=>m.eligible).map(m=>m.uid)">整个 Box</NButton><NButton size="small" :disabled="s.busy" @click="mode=mode==='levels'?'matrix':'levels'">{{ mode==='levels'?'只看当前等级':'看看升几级会更稳' }}</NButton></div>
     <div class="setting-row"><span>满血比较对策</span><NSwitch v-model:value="full" :disabled="s.busy" aria-label="满血开始" /></div><p class="hint">{{ full ? '单挑按满血、无异常；路线检查始终用当前 HP 和状态。' : '单挑使用读取时的 HP 与状态，已倒下的成员也照实计算。' }}</p>
@@ -119,17 +121,25 @@ const baseline=computed(()=>(s.report?.results||[]).filter(row=>row.target===rec
     <NAlert v-if="workload?.overBudget" type="warning" :show-icon="false">这次范围太大。请减少候选、目标或模拟次数。</NAlert>
     <NButton block type="primary" :disabled="s.busy || s.stale || workload?.overBudget || !candidates.length || enemySource==='manual'&&!manualId || !routeMode&&enemySource!=='manual'&&!targets.length" data-testid="run-counters" @click="submit">{{ routeMode ? '运行高级路线比较' : mode==='levels'?'寻找低损升级门槛':'找一只更稳、更省血的对策' }}</NButton>
     <NButton text style="margin-top:16px" :aria-expanded="advanced" @click="advanced=!advanced">高级设置与自选候选 {{ advanced ? '收起' : '展开' }}</NButton><div v-if="advanced">
-      <NSelect v-model:value="mode" :options="modes" :to="false" :disabled="s.busy" aria-label="分析模式" />
-      <h3>候选精灵</h3><NSelect v-model:value="candidates" :options="candidateOptions" multiple filterable :to="false" :disabled="s.busy" aria-label="候选精灵" />
-      <template v-if="routeMode"><div v-for="(uid,i) in candidates" :key="uid" class="split"><span>{{ i+1 }}. {{ candidateLabel(uid) }}</span><div class="actions"><NButton size="tiny" :disabled="i===0||s.busy" @click="move(i,-1)">上移</NButton><NButton size="tiny" :disabled="i===candidates.length-1||s.busy" @click="move(i,1)">下移</NButton></div></div><NSelect v-model:value="auto" :to="false" :options="[{label:'保持游戏自动切换',value:'current'},{label:'开启自动切换',value:'on'},{label:'关闭自动切换',value:'off'}]" /></template>
-      <template v-else><h3>批量目标</h3><NSelect v-model:value="targets" :options="targetOptions" multiple filterable :to="false" :disabled="s.busy" /><NInput v-model:value="custom" placeholder="图鉴编号:等级，例如 478:52, 460:50" :disabled="s.busy" /></template>
+      <NSelect v-model:value="mode" :options="modes" :to="overlayTarget" :disabled="s.busy" aria-label="分析模式" />
+      <h3>候选精灵</h3><NSelect v-model:value="candidates" :options="candidateOptions" multiple filterable :to="overlayTarget" :disabled="s.busy" aria-label="候选精灵" />
+      <template v-if="routeMode"><div v-for="(uid,i) in candidates" :key="uid" class="split"><span>{{ i+1 }}. {{ candidateLabel(uid) }}</span><div class="actions"><NButton size="tiny" :disabled="i===0||s.busy" @click="move(i,-1)">上移</NButton><NButton size="tiny" :disabled="i===candidates.length-1||s.busy" @click="move(i,1)">下移</NButton></div></div><NSelect v-model:value="auto" :to="overlayTarget" :options="[{label:'保持游戏自动切换',value:'current'},{label:'开启自动切换',value:'on'},{label:'关闭自动切换',value:'off'}]" /></template>
+      <template v-else><h3>批量目标</h3><NSelect v-model:value="targets" :options="targetOptions" multiple filterable :to="overlayTarget" :disabled="s.busy" /><NInput v-model:value="custom" placeholder="图鉴编号:等级，例如 478:52, 460:50" :disabled="s.busy" /></template>
 
       <div class="setting-row"><span>每组样本数</span><NInputNumber v-model:value="trials" :min="128" :max="8192" :precision="0" style="width:120px" :disabled="s.busy" /></div>
       <div class="setting-row"><span>要求胜率至少（%）</span><NInputNumber v-model:value="minWin" :min="0" :max="100" style="width:120px" :disabled="s.busy" /></div><div class="setting-row"><span>允许损血上限（%）</span><NInputNumber v-model:value="maxLoss" :min="0" :max="100" style="width:120px" :disabled="s.busy" /></div>
       <p v-if="workload" class="hint" data-testid="workload">预计 {{ workload.groups.toLocaleString() }} 组 · {{ workload.samples.toLocaleString() }} 条样本</p>
     </div>
-  </template>
-  <p v-if="s.phase" class="hint" data-testid="counter-phase">{{ s.phase }}<template v-if="s.busy"> · {{ s.completed }}/{{ s.total || '?' }}</template></p><NProgress v-if="s.busy && s.total" type="line" :percentage="Math.round(100*s.completed/s.total)" />
+    </template>
+    <template #result>
+    <template v-if="route">
+      <h3 ref="routeHeadingEl">{{ route.win.mean === 1 ? '这批模拟均走完了剩余副本' : '这支队伍存在中途战败风险' }}</h3>
+      <p class="hint">{{ route.order.map(candidateLabel).join(' / ') }}<br>{{ route.trials }} 次模拟，走完剩余副本约 {{ pct(route.win.mean) }}。{{ s.routeReport?.options.start==='current'?'使用读取时的 HP 和状态。':'使用满血、无异常状态。' }}途中中心照常治疗，等级保持读取时状态。</p>
+      <div v-if="culprit" ref="reasonEl" class="counter-reason" data-testid="route-reason"><strong>最常见战败位置：{{ culprit.id ? pokemonName(culprit.id) : culprit.label }}</strong><p>{{ route.trials }} 次模拟中，有 {{ culprit.count }} 次在这里战败。<template v-if="culprit.nextCenter">没能到达下一处治疗点（{{ chapterLabel(culprit.nextCenter) }}），后面还隔着 {{ culprit.battlesToCenter }} 场战斗。</template><template v-else>没能走到副本结束；后面没有其他治疗点。</template></p><p v-if="bottleneck">这段路最耗血的是 {{ pokemonName(bottleneck.id!) }}，平均累计消耗队伍 {{ pct(bottleneck.wear) }} 的最大 HP。<template v-if="bottleneck.node!==culprit.node">建议优先降低它造成的战损，给后面的战斗留出血量。</template></p><NButton v-if="s.catalog.targets.some(t=>t.key===counterThreatKey)" size="small" type="primary" secondary :disabled="s.busy" data-testid="counter-culprit" @click="counterForFailure">为耗血来源找低损对策 →</NButton></div>
+      <div v-for="threat in route.threats?.slice(0,3)" :key="`${threat.node}:${threat.id}`" class="split"><span>{{ threat.id ? pokemonName(threat.id) : threat.label }}</span><small>平均消耗队伍 {{ pct(threat.wear) }} 的最大 HP</small></div>
+    </template>
+
+  <p v-if="s.phase" class="hint">{{ s.phase }}<template v-if="s.busy"> · {{ s.completed }}/{{ s.total || '?' }}</template></p><NProgress v-if="s.busy && s.total" type="line" :percentage="Math.round(100*s.completed/s.total)" />
   <template v-if="s.report?.options.mode==='matrix' && recommendation">
     <h2>推荐对策</h2><NAlert v-if="s.phase!=='计算完成'" type="warning" :show-icon="false">正在计算，下面还不是完整候选的最终比较。</NAlert>
     <div ref="pickEl" class="counter-pick section-card" data-testid="counter-recommendation"><NTag size="small" :type="recommendation.qualified?'success':'warning'">{{ recommendation.qualified?'满足本次低损条件':'未找到满足要求的方案，以下仅为备选' }}</NTag><p>针对 {{ recommendation.targetId?pokemonName(recommendation.targetId):recommendation.target }} Lv.{{ recommendation.targetLevel }}</p><h3>{{ pokemonName(recommendation.id) }} · Lv.{{ recommendation.level }}</h3><strong>{{ recommendation.facts.order }} · 预计损血 {{ pct(recommendation.loss.mean) }}</strong><p>模拟胜率 {{ pct(recommendation.win.mean) }}<template v-if="commonHits(recommendation)">；获胜时最常见 {{ commonHits(recommendation) }} 次命中攻击</template>。</p>
@@ -144,5 +154,9 @@ const baseline=computed(()=>(s.report?.results||[]).filter(row=>row.target===rec
     <NCollapse><NCollapseItem v-for="(row,i) in results" :key="`${row.uid}-${row.target}-${row.level}`" :name="i" :title="`${pokemonName(row.id)} Lv.${row.level} · ${row.qualified?'达到门槛':'未达到门槛'}`"><p>{{ row.target }}</p><p>胜率 {{ interval(row.win) }}<br>期望战损 {{ interval(row.loss) }}</p><NTag size="small">{{ row.facts.order }} · {{ row.facts.speed }} / {{ row.facts.enemySpeed }}</NTag><p class="hint">命中时伤害 {{ row.facts.damage.join('–') }}，敌 HP {{ row.facts.enemyHp }}。获胜样本的命中攻击次数：{{ Object.entries(row.hits).map(([hits,count])=>`${hits} 次攻击 ${count} 次`).join('；') }}。</p></NCollapseItem></NCollapse>
     <NCollapse><NCollapseItem v-for="(row,i) in routes" :key="`${row.order.join(',')}:${row.autoSwitch}`" :name="i" :title="`${row.baseline?'测试基线 · ':''}自动切换${row.autoSwitch?'开':'关'} · 通过 ${pct(row.win.mean)} · ${row.qualified?'达标':'未达标'}`"><p>{{ row.order.map(candidateLabel).join(' → ') }}</p><p>走完概率 {{ interval(row.win) }}<br>最终期望战损 {{ interval(row.loss) }}<br>累计承伤 {{ interval(row.wear) }}<br>累计倒下 {{ row.kos.mean.toFixed(2) }} 次</p></NCollapseItem></NCollapse>
     <NCollapse style="margin-top:16px"><NCollapseItem title="计算条件与边界" name="assumptions"><p v-for="line in s.report.assumptions" :key="line" class="hint">{{ line }}</p></NCollapseItem></NCollapse>
+  </template>
+    </template>
+    <template #progress><NButton v-if="s.busy" size="small" @click="c.cancel">取消计算</NButton></template>
+    </AnalysisFlow>
   </template>
 </template>

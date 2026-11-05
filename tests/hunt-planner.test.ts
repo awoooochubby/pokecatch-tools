@@ -35,7 +35,7 @@ describe('统一队列与出招目标', () => {
 });
 
 describe.skipIf(!existsSync('.cache/engine.js'))('原生追踪模拟与共享团战搜索', () => {
-  const now = Date.UTC(2026, 10, 4, 12), source = readFileSync('.cache/engine.js', 'utf8');
+  const now = Date.UTC(2026, 10, 4, 12), source = existsSync('.cache/engine.js') ? readFileSync('.cache/engine.js', 'utf8') : '';
   const fixture = () => {
     const s = trackerFixture(source, now), native = referenceEngine(source, now, 1, ['Raids', 'LegendZones']);
     s.mons.forEach((m: any) => { m.rank = 5; m.shiny = true; });
@@ -70,8 +70,14 @@ describe.skipIf(!existsSync('.cache/engine.js'))('原生追踪模拟与共享团
     const { s, native } = fixture(); s.adv.badges.push('Maître Kanto');
     const mons = [445, 376, 130, 143, 392, 462];
     s.raids = { bots: { sinnoh: [0, 1, 2].map(i => ({ key: `b-test-${i}`, name: `NPC ${i}`, mons: mons.slice(i * 2, i * 2 + 2).map((id, j) => ({ id, uid: `bot-${i}-${j}`, level: 100, xp: 0, bot: true, statMult: .85 })) })) }, pick: {}, done: {}, botsV: 3, timesV: 1, pityV: 1, paceV: 1 };
-    const raw = JSON.stringify(s);
-    const plan = await optimizeRaid(source, raw, now, { region: 'sinnoh', boss: 25, date: native.Raids.dateKey(now), done: false, input: null, error: '' }, s.team.slice(0, 2));
+    const raw = JSON.stringify(s), trace: any[] = [];
+    const plan = await optimizeRaid(source, raw, now, { region: 'sinnoh', boss: 25, date: native.Raids.dateKey(now), done: false, input: null, error: '' }, s.team.slice(0, 2), () => {}, row => trace.push(structuredClone(row)));
+    expect(plan.analysis).toHaveLength(3); expect(plan.analysis.every(row => row.screening.trials === 32)).toBe(true);
+    expect(plan.analysis.filter(row => row.validation).every(row => row.validation!.trials === 512)).toBe(true);
+    expect(trace.filter(row => !row.validation)).toHaveLength(3); expect(trace.filter(row => row.validation)).toHaveLength(3);
+    const winner = plan.analysis.find(row => row.key === plan.chosenKey)!;
+    expect(winner.validation!.expectedClearMoves).toBe(plan.report.expectedClearMoves);
+    expect(plan.report.expectedClearMoves).toBe(Math.min(...plan.analysis.flatMap(row => row.validation?.expectedClearMoves != null ? [row.validation.expectedClearMoves] : [])));
     expect(plan.candidates).toBe(3); expect(plan.report.trials).toBe(512);
     expect(plan.report.moves.total.mean).toBeGreaterThan(0); expect(plan.report.moves.enemy.mean).toBeGreaterThan(0);
     expect(plan.report.expectedClearMoves).toBeCloseTo(plan.report.moves.total.mean / plan.report.win.mean);

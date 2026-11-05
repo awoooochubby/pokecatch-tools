@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useSelectTarget } from '../ui/select-target';
+const overlayTarget = useSelectTarget();
 import { computed, ref, watch } from 'vue';
 import { useDraggable, useWindowSize } from '@vueuse/core';
 import { NButton, NSelect, NTag, NCollapse, NCollapseItem } from 'naive-ui';
@@ -8,7 +10,10 @@ import { duration, number } from '../core/format';
 import { chapterLabel } from '../core/chapters';
 import Forecast from './Forecast.vue';
 import NodeExperience from './NodeExperience.vue';
-const { runtime: r } = defineProps<{ runtime: Runtime }>();
+import { usePanelSize } from '../ui/panel-size';
+const { runtime: r, embedded = false } = defineProps<{ runtime: Runtime; embedded?: boolean }>();
+const emit = defineEmits<{ 'open-desk': [] }>();
+const panel = usePanelSize(r.store, 'farmingSize', { width: 390, height: 650 });
 const s = r.farming.state, handle = ref<HTMLElement>(), { width, height } = useWindowSize();
 const saved = r.store.get<{ x: number; y: number } | null>('farmingPosition', null);
 const savedView=r.store.get<string>('farmingView','forecast');
@@ -17,10 +22,10 @@ watch(view, value => r.store.set('farmingView', value));
 const { x, y } = useDraggable(handle, { initialValue: saved || { x: 16, y: 100 }, preventDefault: true,
   onEnd(p) { r.store.set('farmingPosition', p); } });
 const compact = ref(false);
-const folded = computed(() => r.settings.farmingFolded || width.value < 600 && !compact.value);
+const folded = computed(() => !embedded && (r.settings.farmingFolded || width.value < 600 && !compact.value));
 const style = computed(() => {
-  const top = width.value < 600 && folded.value ? Math.max(0, height.value - 66) : Math.max(0, Math.min(y.value, height.value - (folded.value ? 60 : 250)));
-  return { left: Math.max(0, Math.min(x.value, width.value - Math.min(360, width.value - 16))) + 'px', top: top + 'px', maxHeight: height.value - top - 8 + 'px' };
+  const top = width.value < 600 && folded.value ? Math.max(0, height.value - 66) : Math.max(0, Math.min(y.value, height.value - (folded.value ? 60 : panel.size.value.height) - 8));
+  return { left: Math.max(0, Math.min(x.value, width.value - panel.size.value.width - 8)) + 'px', top: top + 'px', width: panel.size.value.width + 'px', height: folded.value ? 'auto' : panel.size.value.height + 'px', maxHeight: height.value - top - 8 + 'px' };
 });
 watch(() => [r.settings.farmingFolded, r.settings.farmingVisible], () => r.saveSettings());
 const current = computed(() => s.records.find(row => row.key === s.currentKey));
@@ -45,15 +50,15 @@ function exportRecords() {
 }
 </script>
 <template>
-  <aside v-if="r.settings.farmingVisible" class="farming-window" :style="style" aria-label="刷图经验浮窗" data-testid="farming-window">
-    <header class="farming-header"><div ref="handle" class="farming-drag" title="拖动移动浮窗"><strong>刷图经验</strong><small>{{ current ? name(current.name) : '等待普通冒险' }}</small></div><div class="actions"><NButton size="tiny" quaternary aria-label="折叠刷图浮窗" @click="toggle">{{ folded ? '＋' : '－' }}</NButton><NButton size="tiny" quaternary aria-label="关闭刷图浮窗" @click="r.settings.farmingVisible = false">×</NButton></div></header>
+  <aside v-if="embedded || r.settings.farmingVisible" :class="embedded ? 'farming-embedded' : 'farming-window'" :style="embedded ? undefined : style" :aria-label="embedded ? '刷图经验分析' : '刷图经验浮窗'" data-testid="farming-window">
+    <header v-if="!embedded" class="farming-header"><div ref="handle" class="farming-drag" title="拖动移动浮窗"><strong>刷图经验</strong><small>{{ current ? name(current.name) : '等待普通冒险' }}</small></div><div class="actions"><NButton size="tiny" secondary aria-label="在分析台查看刷图数据" @click="emit('open-desk')">放大 ↗</NButton><NButton size="tiny" quaternary aria-label="折叠刷图浮窗" @click="toggle">{{ folded ? '＋' : '－' }}</NButton><NButton size="tiny" quaternary aria-label="关闭刷图浮窗" @click="r.settings.farmingVisible = false">×</NButton></div></header>
     <div v-if="!folded" class="farming-content">
       <div class="actions"><NButton size="small" :type="view === 'forecast' ? 'primary' : 'default'" :aria-pressed="view === 'forecast'" @click="view = 'forecast'">模拟选图</NButton><NButton size="small" :type="view==='nodes'?'primary':'default'" :aria-pressed="view==='nodes'" @click="view='nodes'">本图节点</NButton><NButton size="small" :type="view === 'observed' ? 'primary' : 'default'" :aria-pressed="view === 'observed'" @click="view = 'observed'">实测记录</NButton></div>
       <Forecast v-if="view === 'forecast'" :runtime="r" />
       <NodeExperience v-else-if="view==='nodes'" :runtime="r" />
       <template v-else>
       <div class="split"><small>{{ s.currentNode || '按整章地图累计，多轮合并' }}</small><NTag size="small" :type="r.settings.farming ? 'success' : 'warning'">{{ r.settings.farming ? '实测' : '已关闭' }}</NTag></div>
-      <NSelect :value="s.selected" :options="options" :to="false" size="small" aria-label="经验比较对象" style="margin-top:12px" @update:value="r.farming.select($event)" />
+      <NSelect :value="s.selected" :options="options" :to="overlayTarget" size="small" aria-label="经验比较对象" style="margin-top:12px" @update:value="r.farming.select($event)" />
       <div class="eyebrow">本图实际入账经验</div><div class="hero-stat" data-testid="map-xp">{{ number(metric?.xp || 0) }}<span>XP</span></div>
       <div class="stat-grid"><div><small>本图 XP/分钟</small><strong data-testid="map-rate">{{ rate === null ? '—' : number(rate) }}</strong></div><div><small>最近 60 秒 XP/分钟</small><strong>{{ recent === null ? '采样中' : number(recent) }}</strong></div><div><small>有效观测时长</small><strong>{{ duration(metric?.ms || 0) }}</strong></div><div><small>折合 XP/小时</small><strong>{{ rate === null ? '—' : number(rate * 60) }}</strong></div></div>
       <p class="hint">{{ s.status }}{{ current?.skipped ? ` · 已排除 ${current.skipped} 个不完整区间` : '' }}。{{ s.trusted ? '已核对当前版本的跨级经验公式。' : '游戏版本未核实，跨级区间将排除。' }}</p>
@@ -64,5 +69,6 @@ function exportRecords() {
       <NButton size="tiny" quaternary block data-testid="reset-map" @click="r.farming.resetCurrent()">重新测量当前图（保留其他图）</NButton>
       </template>
     </div>
+    <button v-if="!embedded && !folded" class="panel-resize" aria-label="调整刷图浮窗大小" title="拖动调整宽高；方向键微调" @pointerdown="panel.resize" @keydown="panel.keyboard">⌟</button>
   </aside>
 </template>

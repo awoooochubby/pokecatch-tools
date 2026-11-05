@@ -9,7 +9,7 @@ import type { GameAdapter } from '../core/game';
 import type { Store } from '../core/storage';
 import { berryPlan, normalizeBerries } from '../tracker/berries';
 import { completionQueue, huntContext, huntTeam, validateTeam } from '../tracker/teams';
-import { raidIds, raidPlanContext, type RaidPlan } from '../raid/planner';
+import { raidIds, raidPlanContext, type RaidPlan, type RaidCandidateAnalysis } from '../raid/planner';
 import { readRaidCatalog, raidDate } from '../raid/read';
 import { pokemonName } from '../core/pokemon';
 import type { RaidEntry } from '../raid/types';
@@ -22,7 +22,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     ...(saved.teams ? { teams: Object.fromEntries(Object.entries(saved.teams).filter(([, ts]) => Array.isArray(ts) && ts.length > 0 && ts.length <= 6 && ts.every(uid => typeof uid === 'string'))) } : {}) });
   const state = reactive({ running: false, busy: false, catalog: null as HuntCatalog | null, job: null as HuntJob | null,
     phase: '选好队伍与目标，开始后自动追踪和切图', error: '', berryStatus: '', logs: [] as TrackerLog[],
-    analysing: false, progress: '', predictions: {} as Record<number, HuntPrediction>, raids: [] as RaidEntry[],
+    raidCandidates: [] as RaidCandidateAnalysis[], analysing: false, progress: '', predictions: {} as Record<number, HuntPrediction>, raids: [] as RaidEntry[],
     raidPlans: {} as Record<string, RaidPlan>, notice: '', raidBusy: false });
   let worker: globalThis.Worker | null = null, controller: AbortController | null = null;
   let timeout: ReturnType<typeof setTimeout> | undefined, serial = 0, lastRequest = 0, lastTravel = 0;
@@ -72,7 +72,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
     finally { state.raidBusy = false; navigation.showAdventure(); }
   }
   function prediction<T>(payload: Record<string, unknown>): Promise<T> {
-    cancelPrediction(); state.analysing = true; state.progress = '正在启动原生战斗模拟';
+    cancelPrediction(); state.raidCandidates = []; state.analysing = true; state.progress = '正在启动原生战斗模拟';
     return new Promise((resolve, reject) => {
       rejectPrediction = reject; const active = predictor = new PredictionWorker();
       const finish = () => { clearTimeout(predictionTimer); active.terminate(); if (predictor === active) predictor = null; state.analysing = false; rejectPrediction = null; };
@@ -80,6 +80,7 @@ export function createTracker(game: GameAdapter, store: Store, navigation = new 
       active.onerror = () => { finish(); reject(new Error('战斗模拟进程失败')); };
       active.onmessage = event => {
         if (predictor !== active || disposed) return;
+        if (event.data.type === 'candidate') { const i = state.raidCandidates.findIndex(c => c.key === event.data.candidate.key); if (i < 0) state.raidCandidates.push(event.data.candidate); else state.raidCandidates[i] = event.data.candidate; return; }
         if (event.data.type === 'progress') { state.progress = `模拟进度 ${event.data.done}/${event.data.total}`; return; }
         finish(); if (event.data.type === 'error') reject(new Error(event.data.message)); else resolve(event.data.report);
       };

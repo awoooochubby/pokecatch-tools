@@ -5,6 +5,8 @@ import {chromium} from 'playwright';
 const engine=JSON.parse(readFileSync('src/simulation/version.json','utf8'));
 if(!existsSync('.cache/engine.js'))throw new Error('Run npm run test:engine first');
 const executablePath=process.env.CHROMIUM_PATH||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':chromium.executablePath());
+async function setupFlow(scope, title) { const flow = scope.locator(`[data-analysis="${title}"]`); if (await flow.count()) await flow.locator('.flow-nav button').filter({hasText:'任务设置'}).click(); }
+
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox']});
 try {
   const page=await browser.newPage({viewport:{width:1280,height:1000}}),errors=[];
@@ -23,7 +25,7 @@ try {
   await page.addScriptTag({content:readFileSync('pokecatch-tools.user.js','utf8')});
   async function wheelSelect(label) {
     const select=page.locator(`.n-select[aria-label="${label}"]`);
-    await select.scrollIntoViewIfNeeded();await select.locator('.n-base-selection').click();
+    await select.scrollIntoViewIfNeeded();await select.locator('.n-base-suffix').click();
     const menu=page.locator('.n-base-select-menu:visible'),list=menu.locator('.v-vl');
     await list.waitFor();
     const metrics=await list.evaluate(el=>({overflow:getComputedStyle(el).overflowY,height:el.clientHeight,content:el.scrollHeight}));
@@ -49,7 +51,7 @@ try {
   }
   await page.getByRole('tab',{name:'对策',exact:true}).click();await page.getByTestId('load-box').click();
   await page.getByTestId('counter-phase').filter({hasText:'已读取快照'}).waitFor({timeout:30000});
-  await wheelSelect('配队目标节点');await wheelSelect('副本对策目标');
+  await page.getByTestId('open-team-planner').click();await wheelSelect('配队目标节点');await page.getByRole('button',{name:'单体对策／路线检查',exact:true}).click();await wheelSelect('副本对策目标');
   await page.getByRole('button',{name:'指定精灵',exact:true}).click();await wheelSelect('指定精灵名称');
   await page.getByRole('button',{name:/高级设置与自选候选/}).click();await wheelSelect('候选精灵');
   await page.getByTestId('load-forecast').click();

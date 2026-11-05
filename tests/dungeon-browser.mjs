@@ -7,6 +7,8 @@ const engineVersion=JSON.parse(readFileSync('src/simulation/version.json','utf8'
 await build({entryPoints:['tests/dungeon-fixture.ts'],outfile:'.cache/browser-dungeon.mjs',bundle:true,platform:'node',format:'esm'});
 const {leagueFixture}=await import(pathToFileURL(process.cwd()+'/.cache/browser-dungeon.mjs').href);
 const executablePath=process.env.CHROMIUM_PATH||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':chromium.executablePath());
+async function setupFlow(scope, title) { const flow = scope.locator(`[data-analysis="${title}"]`); if (await flow.count()) await flow.locator('.flow-nav button').filter({hasText:'任务设置'}).click(); }
+
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox']});
 try{
   const page=await browser.newPage({viewport:{width:1280,height:1000}}),requests=[],errors=[];
@@ -27,16 +29,17 @@ try{
   await page.getByRole('tab',{name:'对策',exact:true}).click();await page.getByTestId('load-box').click();
   await page.getByTestId('counter-phase').filter({hasText:'已读取快照'}).waitFor({timeout:30000});
   assert.match(await page.getByTestId('counter-chapter').innerText(),/神奥联盟/);
+  await page.getByTestId('open-team-planner').click();await setupFlow(page, '目标配队');
   const fixedGoal=await page.getByTestId('plan-goal').innerText();assert.match(fixedGoal,/联盟冠军/);
-  await page.getByTestId('run-team-plan').click();await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:120000});
+  await page.getByTestId('open-team-planner').click();await setupFlow(page, '目标配队');await page.getByTestId('run-team-plan').click();await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:120000});
   const fixedReport=await page.getByTestId('plan-baseline').innerText(),beforeAdvance=requests.filter(url=>url===engineVersion.boot).length;
   await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),league.next);
   await page.getByTestId('dungeon-progress').filter({hasText:'菊野'}).waitFor({timeout:10000});
-  assert.equal(await page.getByTestId('plan-goal').innerText(),fixedGoal);
+  await setupFlow(page, '目标配队');assert.equal(await page.getByTestId('plan-goal').innerText(),fixedGoal);await page.locator('[data-analysis="目标配队"] .flow-nav button').filter({hasText:'分析结果'}).click();
   assert.equal(await page.getByTestId('plan-baseline').innerText(),fixedReport);
   assert.equal(requests.filter(url=>url===engineVersion.boot).length,beforeAdvance);
-  await page.getByTestId('run-team-plan').click();await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:120000});
-  assert.equal(await page.getByTestId('plan-goal').innerText(),fixedGoal);
+  await page.getByTestId('open-team-planner').click();await setupFlow(page, '目标配队');await page.getByTestId('run-team-plan').click();await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:120000});
+  await setupFlow(page, '目标配队');assert.equal(await page.getByTestId('plan-goal').innerText(),fixedGoal);await page.locator('[data-analysis="目标配队"] .flow-nav button').filter({hasText:'分析结果'}).click();
   assert.match(await page.getByTestId('plan-baseline').innerText(),/联盟/);
   console.log('PASS: league-stage progress preserves the dungeon goal and report without reload; recalculation keeps the same champion target');
   const nodeSave=JSON.parse(JSON.stringify(forecastSave));nodeSave.mons.forEach(m=>{m.level=68;m.xp=0;delete m.hp;});
@@ -56,7 +59,7 @@ try{
   await page.screenshot({path:'test-results/node-experience.png'});
   nodeSave.adv.node=1;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),nodeSave);
   await float.getByTestId('node-xp-stale').waitFor();
-  await float.getByLabel('节点经验计算范围').click();await page.getByText('剩余副本预估：保留当前 HP 和这场战斗',{exact:true}).click();
+  await setupFlow(float, '节点经验');await float.getByLabel('节点经验计算范围').click();await page.getByText('剩余副本预估：保留当前 HP 和这场战斗',{exact:true}).click();
   await float.getByTestId('run-node-xp').click();await float.getByTestId('node-xp-phase').filter({hasText:'节点计算完成'}).waitFor({timeout:60000});
   assert.match(await float.getByTestId('node-xp-row').first().innerText(),/已通过，本次未回算/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(nodeSave));

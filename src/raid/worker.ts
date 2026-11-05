@@ -6,7 +6,7 @@ self.onmessage = async (event: MessageEvent<{ source: string; save: string; now:
   try {
     const req = event.data;
     if (req.optimize) {
-      const plan = await optimizeRaid(req.source, req.save, req.now, req.optimize, undefined, (done, total) => self.postMessage({ type: 'progress', done, total }));
+      const plan = await optimizeRaid(req.source, req.save, req.now, req.optimize, undefined, (done, total) => self.postMessage({ type: 'progress', done, total }), candidate => self.postMessage({ type: 'candidate', candidate }));
       self.postMessage({ type: 'optimized', plan }); return;
     }
     const report = await predictRaid(req.source, req.save, req.now, req.input, req.trials, (done, total) => self.postMessage({ type: 'progress', done, total }));

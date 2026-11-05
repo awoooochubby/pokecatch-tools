@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useSelectTarget } from '../ui/select-target';
+const overlayTarget = useSelectTarget();
+import AnalysisFlow from './AnalysisFlow.vue';
 import {computed,ref,watch} from 'vue';
 import {NAlert,NButton,NCollapse,NCollapseItem,NInputNumber,NProgress,NSelect} from 'naive-ui';
 import type {Runtime} from '../core/runtime';
@@ -23,21 +26,24 @@ function run(){c.runNodes({scope:scope.value,trials:trials.value,seed:1729});}
 function download(){if(!report.value)return;const url=URL.createObjectURL(new Blob([JSON.stringify(report.value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='pokecatch-node-experience.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 </script>
 <template>
+  <AnalysisFlow title="节点经验" :busy="s.busy" :has-result="!!(report)" :result-key="report" :error="s.error" :stale="s.stale || !!changed" :phase="s.phase" phase-testid="node-xp-phase" :progress="s.total ? s.completed / s.total * 100 : 0" :cancelled="s.phase.includes('取消')">
+    <template #setup>
   <h2>本图每个节点能拿多少经验</h2>
   <p class="hint">按副本统计每个节点的实得 XP。联盟包含四天王、冠军和全部道中；奖励计入触发它的节点。</p>
-  <NSelect v-model:value="scope" :options="[{label:'整副本重打预估：从入口满血出发',value:'full'},{label:'剩余副本预估：保留当前 HP 和这场战斗',value:'remaining'}]" :to="false" :disabled="s.busy" aria-label="节点经验计算范围" />
+  <NSelect v-model:value="scope" :options="[{label:'整副本重打预估：从入口满血出发',value:'full'},{label:'剩余副本预估：保留当前 HP 和这场战斗',value:'remaining'}]" :to="overlayTarget" :disabled="s.busy" aria-label="节点经验计算范围" />
   <p class="hint">{{ scope==='full'?'使用当前等级、经验和伙伴进度重打完整副本；敌人按节点规则重新遭遇，已过节点的结果也只是预估。':'从当前节点继续，保留在场敌人的血量与队列，计算后续所有阶段；已经过去的节点不回算。' }}</p>
   <div class="setting-row"><span>模拟次数</span><NInputNumber v-model:value="trials" :min="128" :max="2048" :precision="0" :disabled="s.busy" aria-label="节点经验模拟次数" style="width:110px" /></div>
   <div class="actions"><NButton type="primary" secondary :disabled="s.busy||!Number.isInteger(trials)||trials<128||trials>2048" data-testid="run-node-xp" @click="run">计算本图节点经验</NButton><NButton v-if="s.busy" size="small" @click="c.cancel">取消</NButton></div>
-  <p class="hint" data-testid="node-xp-phase">{{ s.phase.startsWith('无需实战采集')?'不用先打图采样，点击即可计算。':s.phase }}<template v-if="s.busy&&s.total"> · {{ s.completed }}/{{ s.total }}</template></p>
+  <p class="hint">{{ s.phase.startsWith('无需实战采集')?'不用先打图采样，点击即可计算。':s.phase }}<template v-if="s.busy&&s.total"> · {{ s.completed }}/{{ s.total }}</template></p>
+    </template>
+    <template #result>
   <NProgress v-if="s.busy&&s.total" type="line" :percentage="Math.round(100*s.completed/s.total)" />
-  <NAlert v-if="s.error" type="error" :show-icon="false">{{ s.error }}</NAlert>
   <NAlert v-if="s.stale" type="warning" :show-icon="false" data-testid="node-xp-stale">路线、战斗或队伍已变化，下面是读取时快照；重新计算会自动更新。</NAlert>
   <template v-if="report">
     <h3 data-testid="node-xp-chapter">{{ chapter }}</h3>
     <p class="hint">{{ report.options.scope==='full'?'整图重打':'从当前状态继续' }} · 读取时第 {{ (report.catalog.nodeIndex||0)+1 }} 处 · {{ report.trials }} 次模拟</p>
     <NAlert v-if="changed" type="warning" :show-icon="false">范围已改变，下面仍是上一次结果，请重新计算。</NAlert>
-    <NSelect v-model:value="selected" :options="members" :to="false" aria-label="节点经验查看对象" />
+    <NSelect v-model:value="selected" :options="members" :to="overlayTarget" aria-label="节点经验查看对象" />
     <div class="forecast-rate accent" data-testid="node-xp-total">{{ number(total?.mean||0) }} <small>{{ partial?'已知节点期望 XP':'路线期望 XP' }}</small></div>
     <p class="hint">{{ selected?'所选成员实际入账':'整队成员实际入账合计' }}，不是所有成员各拿这么多。<template v-if="report.complete">走完计算路线约 {{ pct(report.complete.mean) }}。</template>各节点期望相加与这里的合计一致，显示值有四舍五入。</p>
     <NAlert v-if="partial" type="warning" :show-icon="false">有节点暂不能计算，后续标为未知，合计只含可确认的前面节点。</NAlert>
@@ -57,5 +63,8 @@ function download(){if(!report.value)return;const url=URL.createObjectURL(new Bl
     <NButton size="small" secondary block style="margin-top:12px" data-testid="export-node-xp" @click="download">导出节点经验明细</NButton>
     <NCollapse style="margin-top:12px"><NCollapseItem title="经验口径与计算边界" name="assumptions"><p v-for="line in report.assumptions" :key="line" class="hint">{{ line }}</p></NCollapseItem></NCollapse>
   </template>
+    </template>
+    <template #progress><p class="hint">{{ s.phase }}<template v-if="s.total"> · {{ s.completed }}/{{ s.total }}</template></p><NButton v-if="s.busy" size="small" @click="c.cancel">取消模拟</NButton></template>
+  </AnalysisFlow>
 </template>
 <style scoped>.node-xp-list{margin-top:12px}.node-xp-row{padding:12px 0;border-bottom:1px solid #ffffff12}.node-xp-row>.split{margin-bottom:5px}.node-xp-row .hint{margin:6px 0}.node-xp-row strong{overflow-wrap:anywhere}.node-xp-row small{flex-shrink:0}</style>

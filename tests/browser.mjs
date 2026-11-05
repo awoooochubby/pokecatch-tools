@@ -11,6 +11,8 @@ if (!existsSync('.cache/engine.js')) throw new Error('Run npm run test:engine fi
 await build({entryPoints:['tests/dungeon-fixture.ts'],outfile:'.cache/browser-dungeon.mjs',bundle:true,platform:'node',format:'esm'});
 const {leagueFixture}=await import(pathToFileURL(process.cwd()+'/.cache/browser-dungeon.mjs').href);
 const executablePath = process.env.CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : chromium.executablePath());
+async function setupFlow(scope, title) { const flow = scope.locator(`[data-analysis="${title}"]`); if (await flow.count()) await flow.locator('.flow-nav button').filter({hasText:'任务设置'}).click(); }
+
 const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
 const errors = [], requests = [];
 try {
@@ -120,19 +122,19 @@ try {
   await manualTarget.fill('999999:52');
   await page.getByTestId('run-counters').click();
   await page.getByText('指定目标的物种或等级无效',{exact:true}).waitFor();
-  await manualTarget.fill('');
+  await setupFlow(page, '对策与路线');await manualTarget.fill('');
   // A recoverable input error must not destroy the verified engine or force a reload.
   await page.getByTestId('run-counters').click();
   await page.getByText('分析结果',{exact:true}).waitFor({timeout:30000});
   await page.getByTestId('counter-recommendation').waitFor();
   assert.match(await page.getByTestId('counter-reason').innerText(),/速度|损血/);
   await page.getByText(/^火伊布 Lv.52 · (?:达到门槛|未达到门槛)$/).waitFor();
-  await page.getByText(/独立模拟中 · 可随时取消/).waitFor({state:'hidden'});
-  await page.getByText('Box 对各敌人的战损',{exact:true}).first().click();
+  await page.getByText(/独立模拟中 · 可随时取消/).first().waitFor({state:'hidden'});
+  await setupFlow(page, '对策与路线');await page.getByText('Box 对各敌人的战损',{exact:true}).first().click();
   await page.getByText('全局队伍排序比较',{exact:true}).last().click();
   await page.getByTestId('run-counters').click();
   await page.getByText(/测试基线 · 自动切换/).waitFor({timeout:60000});
-  await page.getByText(/独立模拟中 · 可随时取消/).waitFor({state:'hidden',timeout:60000});
+  await page.getByText(/独立模拟中 · 可随时取消/).first().waitFor({state:'hidden',timeout:60000});
   const reportDownload = page.waitForEvent('download');
   await page.getByRole('button',{name:'导出完整报告',exact:true}).click();
   const reportFile = await reportDownload;
@@ -142,7 +144,7 @@ try {
   assert.ok(counterReport.routes.every(row => typeof row.qualified==='boolean'));
   assert.equal(await page.evaluate(() => localStorage.getItem('gachamon-save-v1')), JSON.stringify(analysisSave));
   await page.screenshot({path:'test-results/counters.png'});
-  await page.getByText('全局队伍排序比较',{exact:true}).first().click();
+  await setupFlow(page, '对策与路线');await page.getByText('全局队伍排序比较',{exact:true}).first().click();
   await page.getByText('Box 对各敌人的战损',{exact:true}).last().click();
   await samples.fill('8192'); await samples.press('Tab');
   await page.getByTestId('run-counters').click();
@@ -168,7 +170,7 @@ try {
   await page.getByTestId('counter-recommendation').scrollIntoViewIfNeeded();
   await page.screenshot({path:'test-results/counter-reasons.png'});
   assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
-  await page.getByTestId('run-team-plan').click();
+  await page.getByTestId('open-team-planner').click();await setupFlow(page, '目标配队');await page.getByTestId('run-team-plan').click();
   await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:90000});
   await page.getByTestId('team-plan-result').first().filter({hasText:'火伊布'}).waitFor();
   assert.match(await page.getByTestId('team-plan-result').first().innerText(),/无需练级/);
@@ -185,7 +187,7 @@ try {
   await page.getByTestId('counter-stale').waitFor();
   // Routine HP/XP changes should refresh on demand rather than leaving the
   // goal button permanently disabled while the game continues in the background.
-  await page.getByTestId('run-team-plan').click();
+  await page.getByTestId('open-team-planner').click();await setupFlow(page, '目标配队');await page.getByTestId('run-team-plan').click();
   await page.getByTestId('counter-phase').filter({hasText:'配队完成'}).waitFor({timeout:90000});
   assert.equal(await page.getByTestId('counter-stale').count(),0);
   assert.equal(await page.evaluate(()=>localStorage.getItem('gachamon-save-v1')),JSON.stringify(dangerSave));
@@ -241,11 +243,11 @@ try {
     adv:{chapter:56,unlocked:59,runs:1,speed:1,layout:6,gifts:{},badges:[],kept:{},loops:[],node:0,nodes:[{type:'heal',name:'Voilaroc',bg:'town'}],battle:null,pending:null}};
   await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),forecastSave);
   await float.getByRole('button',{name:'模拟选图',exact:true}).click();
-  await float.getByTestId('load-forecast').click();
+  await setupFlow(float, '模拟选图');await float.getByTestId('load-forecast').click();
   await float.getByTestId('forecast-phase').filter({hasText:'队伍已就绪'}).waitFor({timeout:30000});
   const forecastTrials=float.getByText('每图模拟次数',{exact:true}).locator('..').locator('input');
   await forecastTrials.fill('128');await forecastTrials.press('Tab');
-  await float.getByTestId('run-forecast').click();
+  await setupFlow(float, '模拟选图');await float.getByTestId('run-forecast').click();
   await float.getByTestId('forecast-phase').filter({hasText:'比较完成'}).waitFor({timeout:120000});
   assert.equal(await float.getByTestId('forecast-row').count(),3);
   await float.getByTestId('forecast-best').waitFor();
@@ -258,16 +260,16 @@ try {
   await page.screenshot({path:'test-results/forecast.png'});
   const league=leagueFixture(readFileSync('.cache/engine.js','utf8'));
   await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),league.entry);
-  await float.getByTestId('load-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'队伍已就绪'}).waitFor({timeout:30000});
+  await setupFlow(float, '模拟选图');await float.getByTestId('load-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'队伍已就绪'}).waitFor({timeout:30000});
   await float.getByLabel('模拟比较地图').click();await float.getByLabel('模拟比较地图').locator('input').fill('神奥联盟');
   await page.getByText('神奥联盟（当前）',{exact:true}).click();await page.keyboard.press('Escape');
-  await float.getByTestId('run-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'比较完成'}).waitFor({timeout:120000});
+  await setupFlow(float, '模拟选图');await float.getByTestId('run-forecast').click();await float.getByTestId('forecast-phase').filter({hasText:'比较完成'}).waitFor({timeout:120000});
   const aaronRow=float.getByTestId('forecast-row').filter({hasText:'神奥联盟'});await aaronRow.waitFor();
   assert.ok(!(await aaronRow.innerText()).includes('暂不能计算'));assert.match(await aaronRow.innerText(),/预计 XP/);
   console.log('PASS: entire league is one XP-efficiency unit through the actual worker and floating window');
   league.entry.mons[0].xp=10;await page.evaluate(s=>localStorage.setItem('gachamon-save-v1',JSON.stringify(s)),league.entry);
   await float.getByText('队伍、经验或加成已变化，结果对应读取时快照；重新读取后再比较。',{exact:true}).waitFor();
-  await float.getByTestId('run-forecast').click();await float.getByTestId('cancel-forecast').click();
+  await setupFlow(float, '模拟选图');await float.getByTestId('run-forecast').click();await float.getByTestId('cancel-forecast').click();
   await float.getByTestId('forecast-phase').filter({hasText:'已取消'}).waitFor();
   console.log('PASS: native forecast worker, three-map ranking without live samples, report export, stale snapshot and cancellation');
   if(await page.getByTestId('fold').getAttribute('aria-expanded')==='false')await page.getByTestId('fold').click();

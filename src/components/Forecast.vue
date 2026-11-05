@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useSelectTarget } from '../ui/select-target';
+const overlayTarget = useSelectTarget();
+import AnalysisFlow from './AnalysisFlow.vue';
 import { computed, ref, watch } from 'vue';
 import { NAlert, NButton, NCollapse, NCollapseItem, NInputNumber, NProgress, NSelect, NSwitch, NTag } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
@@ -38,25 +41,28 @@ function exportReport() {
 }
 </script>
 <template>
+  <AnalysisFlow title="模拟选图" :busy="s.busy" :has-result="!!(s.report?.rows.length)" :result-key="s.report" :error="s.error" :stale="s.stale || !!changed" :phase="s.phase" phase-testid="forecast-phase" :progress="s.total ? s.completed / s.total * 100 : 0" :cancelled="s.phase.includes('取消')">
+    <template #setup>
   <p class="hint">无需先去地图挂机。按完整副本模拟战斗、实得经验和升级；联盟把四天王、冠军及全部道中一起计算。</p>
-  <div class="actions"><NButton size="small" secondary :disabled="s.busy" data-testid="load-forecast" @click="r.forecast.load">{{ s.catalog ? '重新读取当前队伍' : '读取当前队伍' }}</NButton><NButton v-if="s.busy" size="small" data-testid="cancel-forecast" @click="r.forecast.cancel">取消模拟</NButton></div>
-  <p class="hint" data-testid="forecast-phase">{{ s.phase }}</p>
-  <NAlert v-if="s.error" type="error" :show-icon="false">{{ s.error }}</NAlert>
+  <div class="actions"><NButton size="small" secondary :disabled="s.busy" data-testid="load-forecast" @click="r.forecast.load">{{ s.catalog ? '重新读取当前队伍' : '读取当前队伍' }}</NButton><NButton v-if="s.busy" size="small" @click="r.forecast.cancel">取消模拟</NButton></div>
+  <p class="hint">{{ s.phase }}</p>
   <template v-if="s.catalog">
     <small>{{ s.catalog.team.map(m => `${pokemonName(m.id)} Lv.${m.level}`).join(' / ') }}<br>自动切换{{ s.catalog.autoSwitch ? '开启' : '关闭' }} · 标准节奏每步 {{ number(s.catalog.stepMs) }}ms · 增益 ×{{ s.catalog.xpBoost }}<br>快照 {{ time(s.catalog.capturedAt) }} · 伙伴 {{ buddyLabel }}</small>
-    <h2>比较地图</h2><NSelect v-model:value="chapters" :options="chapterOptions" multiple filterable :to="false" :disabled="s.busy" aria-label="模拟比较地图" />
+    <h2>比较地图</h2><NSelect v-model:value="chapters" :options="chapterOptions" multiple filterable :to="overlayTarget" :disabled="s.busy" aria-label="模拟比较地图" />
     <div class="setting-row"><span>每图模拟次数</span><NInputNumber v-model:value="trials" :min="128" :max="2048" :precision="0" :disabled="s.busy" style="width:115px" aria-label="每图模拟次数" /></div>
     <div class="setting-row"><span>满血从章首出发</span><NSwitch v-model:value="full" :disabled="s.busy" aria-label="模拟满血出发" /></div>
     <p class="hint">{{ full ? '按切图后满血出发；途中中心按原规则治疗。' : '把快照的 HP／状态带到章首，途中治疗照常。' }}本轮升级、触顶以及失败前经验都会计入。每次开算会自动刷新队伍快照。</p>
     <NAlert v-if="overBudget" type="warning" :show-icon="false">最多 16 张图、合计 8192 轮，请减少地图或次数。</NAlert>
     <NButton block type="primary" :disabled="s.busy || !chapters.length || overBudget || !validTrials" data-testid="run-forecast" @click="run">模拟比较 {{ chapters.length }} 张图</NButton>
   </template>
+    </template>
+    <template #result>
   <NProgress v-if="s.busy && s.total" style="margin-top:12px" type="line" :percentage="Math.round(s.completed / s.total * 100)" />
   <NAlert v-if="s.stale" style="margin-top:12px" type="warning" :show-icon="false">队伍、经验或加成已变化，结果对应读取时快照；重新读取后再比较。</NAlert>
   <p v-if="changed" class="hint">比较条件已改变，下面仍显示上一次条件的结果，请重新模拟。</p>
   <template v-if="s.report?.rows.length">
     <h2>预测效率排行 <small>{{ s.busy ? '计算中，结果尚不完整' : '标准行动节奏' }}</small></h2>
-    <NSelect v-model:value="selected" :options="memberOptions" :to="false" aria-label="模拟经验比较对象" size="small" />
+    <NSelect v-model:value="selected" :options="memberOptions" :to="overlayTarget" aria-label="模拟经验比较对象" size="small" />
     <p v-if="best && !changed" class="hint accent" data-testid="forecast-best">预计最高：{{ name(best.name) }}。接近的结果可提高模拟次数再比较。</p>
     <NAlert v-if="!s.busy && rows.some(row => !row.error) && rows.filter(row => !row.error).every(row => !row.metric?.xp.mean)" type="info" :show-icon="false">所选对象在这些模拟中没有经验增长；可检查等级上限及是否能击倒敌人。</NAlert>
     <div v-for="row in rows" :key="row.chapter" class="map-row" data-testid="forecast-row">
@@ -68,4 +74,7 @@ function exportReport() {
     <NButton size="small" secondary block data-testid="export-forecast" @click="exportReport">导出预测报告</NButton>
     <NCollapse><NCollapseItem title="本次模拟的完整口径" name="assumptions"><p v-for="line in s.report.assumptions" :key="line" class="hint">{{ line }}</p></NCollapseItem></NCollapse>
   </template>
+    </template>
+    <template #progress><p class="hint">{{ s.phase }}<template v-if="s.total"> · {{ s.completed }}/{{ s.total }}</template></p><NButton v-if="s.busy" size="small" data-testid="cancel-forecast" @click="r.forecast.cancel">取消模拟</NButton></template>
+  </AnalysisFlow>
 </template>

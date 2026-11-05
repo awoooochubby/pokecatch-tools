@@ -114,7 +114,7 @@ try {
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('gachamon-save-v1')).adv.chapter===18);
   assert.equal(await page.evaluate(()=>window.raidStarts),1);await page.getByTestId('tracker-stop').click();
   const queued=await page.evaluate(()=>JSON.parse(localStorage.getItem('pc-tools-v1')).data.tracker.targets.length);
-  await page.getByTestId('tracker-fill-dex').click();
+  await page.locator('.flow-nav button').filter({hasText:'队列设置'}).click();await page.getByTestId('tracker-fill-dex').click();
   assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem('pc-tools-v1')).data.tracker.targets.length)>queued);
   assert.ok(await page.getByTestId('hunt-target').count()<=12,'Large dex queues must paginate');
   assert.deepEqual(errors,[]);console.log('PASS: raid late-binding, NPC slot swap, exact native ally order, automatic entry, capture completion resumes queue, one-click dex and pagination');

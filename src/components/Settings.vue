@@ -3,6 +3,7 @@ import { NButton, NInputNumber, NSwitch } from 'naive-ui';
 import type { Runtime } from '../core/runtime';
 import pkg from '../../package.json';
 const { runtime: r } = defineProps<{ runtime: Runtime }>();
+const emit = defineEmits<{ 'open-farming': [] }>();
 function exportData() {
   const blob = new Blob([JSON.stringify({ version: pkg.version, ...r.store.export(), currentRound: r.experience.state.current }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = 'pokecatch-tools-backup.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -14,7 +15,7 @@ const savedTime = (value: number) => value ? new Date(value).toLocaleString('zh-
   <h2>功能模块</h2><div class="setting-row"><div><strong>经验统计</strong><small>队伍效率、升级估算与整轮日志</small></div><NSwitch :value="r.settings.experience" aria-label="经验统计" @update:value="r.setEnabled('experience', $event)" /></div><div class="setting-row"><div><strong>敌情与战斗回顾</strong><small>属性弱点、伤害排行与倒下来源</small></div><NSwitch :value="r.settings.enemies" aria-label="敌情与战斗回顾" @update:value="r.setEnabled('enemies', $event)" /></div>
   <p class="hint">关闭模块会停止相应统计，保留历史。重新启用从当前状态采集，缺失过程不会猜测补录。</p>
   <div class="setting-row"><div><strong>刷图效率实测</strong><small>控制实测采集；模拟选图可单独使用</small></div><NSwitch :value="r.settings.farming" aria-label="刷图效率统计" @update:value="r.setEnabled('farming', $event)" /></div>
-  <NButton size="small" secondary @click="r.settings.farmingVisible = true; r.settings.farmingFolded = false; r.saveSettings()">打开刷图经验浮窗</NButton>
+  <NButton size="small" secondary @click="emit('open-farming')">打开刷图经验浮窗</NButton>
   <h2>定期云保存</h2>
   <div class="setting-row"><div><strong>定期点击游戏保存</strong><small>确认服务端回执后才记录成功</small></div><NSwitch :value="r.cloudSave.prefs.enabled" aria-label="定期云保存" @update:value="r.cloudSave.configure($event)" /></div>
   <div class="setting-row"><span>保存间隔（分钟）</span><NInputNumber :value="r.cloudSave.prefs.minutes" :min="15" :max="120" :precision="0" style="width:120px" aria-label="云保存间隔" @update:value="r.cloudSave.configure(r.cloudSave.prefs.enabled, $event || 15)" /></div>
